@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@font-face {
+    font-family: 'frizQuadrata';
+    src: url('/font/friz-quadrata-regular.ttf');
+}
