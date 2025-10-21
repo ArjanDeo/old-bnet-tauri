@@ -37,7 +37,7 @@
   {#if open}
     <ul
       bind:this={dropdownEl}
-      class="absolute w-full bg-gray-900 bg-opacity-80 backdrop-blur-md rounded-lg border border-gray-700 text-white shadow-lg z-10 transition"
+      class="absolute w-full bg-gray-900 bg-opacity-80 backdrop-blur-md rounded-lg border border-gray-700 text-white shadow-lg z-20 transition"
       class:bottom-full={dropUp}
       class:mb-1={!dropUp}
       class:mt-1={dropUp}

@@ -1,21 +1,23 @@
 <script lang="ts">
-  import { type Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import type { LayoutData } from './$types';
   import "../app.css";
   import NavLink from '../components/NavLink.svelte';
   import GameButton from '../components/GameButton.svelte';
   import { ExpansionPrefix, getLayoutConfig } from '../data';
-  import Dropdown from '../components/dropdown.svelte';
   import { launcherStyle } from '../stores';
+  import { goto } from '$app/navigation';
+    import { invoke } from '@tauri-apps/api/core';
+    import { load } from '@tauri-apps/plugin-store';
   
   let { data, children }: { data: LayoutData, children: Snippet } = $props();
+
   
   let layout = $state<ExpansionPrefix>(ExpansionPrefix.Midnight);
   let selectedLink = $state<'GAMES' | 'SHOP' | 'NEWS'>('GAMES');
   
   let config = $derived(getLayoutConfig(layout));
   
-  // Load saved style on mount
   $effect(() => {
     const unsubscribe = launcherStyle.subscribe((val) => {
       layout = val;
@@ -23,9 +25,6 @@
     return unsubscribe;
   });
   
-  function selectStyle(xpac: ExpansionPrefix) {
-    launcherStyle.set(xpac);
-  }
 </script>
 
 <div class="select-none fixed w-full h-screen flex flex-col">
@@ -45,17 +44,14 @@
   <div class="relative z-10 flex flex-col w-full h-screen">
     <!-- Top Navbar -->
     <nav class="rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 p-6 flex flex-row gap-x-10 flex-none">
-      <img src="/images/battle_net_logo.png" alt="battle.net logo" class="w-14 h-14 my-auto mr-6"/>
-      <NavLink text="GAMES" selected={selectedLink=='GAMES'} onClick={() => selectedLink='GAMES'}/>
+      <button onclick={() => goto("/settings")}>
+        <img src="/images/battle_net_logo.png" alt="battle.net logo" class="w-14 h-14 my-auto mr-6" />
+      </button>
+      <NavLink text="GAMES" selected={selectedLink=='GAMES'} onClick={() => goto("/")}/>
       <NavLink text="SHOP" selected={selectedLink=='SHOP'} onClick={() => selectedLink='SHOP'}/>
       <NavLink text="NEWS" selected={selectedLink=='NEWS'} onClick={() => selectedLink='NEWS'}/>
     </nav>
     
-    <Dropdown
-      items={Object.values(ExpansionPrefix)}
-      selected={layout}
-      onSelect={(xpac: ExpansionPrefix) => selectStyle(xpac)}
-    />
     
     <!-- Below navbar -->
     <div class="flex flex-1 min-h-0">
