@@ -1,24 +1,29 @@
-// src/stores.ts
-import { writable } from 'svelte/store';
-import type { Writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 import { load } from '@tauri-apps/plugin-store';
-import { ExpansionPrefix } from './data';
+import { OWTheme, WoWTheme, type GameTheme } from './data';
 
-// Tauri store
+// Init Tauri store
 const store = await load('store.json');
 
-// Load initial value from store or default
-const val = await store.get<{ value: string }>('launcher-style');
-const initialStyle: ExpansionPrefix =
-  val?.value && Object.values(ExpansionPrefix).includes(val.value as ExpansionPrefix)
-    ? (val.value as ExpansionPrefix)
-    : ExpansionPrefix.Midnight;
+// Create Svelte store
+export const GameThemeStore: Writable<GameTheme[]> = writable([]);
 
-// Create a writable Svelte store
-export const launcherStyle: Writable<ExpansionPrefix> = writable(initialStyle);
+// Load initial value from Tauri store
+(async () => {
+  const saved = await store.get<GameTheme[]>('game-themes');
+  if (saved?.length) {
+    GameThemeStore.set(saved);
+  } else {
+    GameThemeStore.set([WoWTheme, OWTheme]);
+  }
+})();
 
-// Subscribe to save changes to Tauri store automatically
-launcherStyle.subscribe(async (value) => {
-  await store.set('launcher-style', { value });
-  await store.save();
+// Persist changes automatically
+GameThemeStore.subscribe((value) => {
+  persistThemes(value);
 });
+
+async function persistThemes(value: GameTheme[]) {
+  await store.set('game-themes', value);
+  await store.save();
+}

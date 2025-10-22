@@ -26,7 +26,7 @@
   <button
     bind:this={buttonEl}
     class="w-full flex justify-between items-center px-4 py-2 bg-gray-900 bg-opacity-80 backdrop-blur-md rounded-lg border border-gray-700 text-white hover:bg-gray-800 transition"
-    on:click={toggleDropdown}
+    onclick={toggleDropdown}
   >
     <span>{selected}</span>
     <svg class="w-4 h-4 ml-2 transition-transform" class:rotate-180={open}>
@@ -45,7 +45,7 @@
       {#each items as item}
         <li
           class="px-4 py-2 hover:bg-blue-600 hover:text-white cursor-pointer transition"
-          on:click={() => { onSelect(item); open = false; }}
+          onclick={() => { onSelect(item); open = false; }}
         >
           {item}
         </li>

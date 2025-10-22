@@ -1,33 +1,36 @@
 <script lang="ts">
   import type { Settings } from "lucide-svelte";
-  import { ExpansionPrefix, getLayoutConfig } from "../data";
+  import { GamePrefix, getLayoutConfig, type GameTheme } from "../data";
   
-  let { layout, options = [] }: { 
-    layout: ExpansionPrefix;
+  let { theme, options = [], game }: { 
+    theme: GameTheme;
     options?: { icon: typeof Settings, label: string }[];
+    game: 'wow' | 'sc2' | 'd3' | 'hs' | 'hots' | 'ow';
   } = $props();
-  
-  let config = $derived(getLayoutConfig(layout));
-  
-  // Size mappings for consistent dimensions
+
+  // Get current layout config based on the active prefix
+  let config = getLayoutConfig(game as GamePrefix, theme.activePrefix);
+
+  // Size mappings for consistent logo dimensions
   const sizeClasses = {
-    small: 'h-32',    // ~128px
-    medium: '2xl:h-40 h-30',   // ~160px
-    large: 'h-48',    // ~192px
-    xlarge: 'h-56'    // ~224px
+    small: 'h-32',          // ~128px
+    medium: '2xl:h-40 h-30', // ~160px
+    large: 'h-48',          // ~192px
+    xlarge: 'h-56'          // ~224px
   };
 </script>
 
 <div class="flex flex-col items-center w-fit">
-  <!-- Fixed height container with object-fit to prevent layout shifts -->
-  <div class="flex items-center justify-center {sizeClasses[config.logoSize]}">
+  <!-- Logo container -->
+  <div class="flex items-center justify-center {sizeClasses[config?.logoSize!]}">
     <img 
-      src="images/{layout}_logo.png" 
-      alt="{layout} Logo" 
+      src="../images/{game}/{game}_{theme.activePrefix}_logo.png" 
+      alt="{game} Logo" 
       class="max-h-full w-auto object-contain"
     />
   </div>
-  
+
+  <!-- Options row -->
   <div class="flex flex-row gap-x-5 text-white mt-6 bg-black/25 py-0.5 px-1 rounded">
     {#each options as option}
       <div class="flex flex-row gap-x-0.5 items-center">
