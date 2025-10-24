@@ -7,6 +7,8 @@
   import { GameThemeStore } from "../../../stores";
   import { onMount } from "svelte";
   import { load } from "@tauri-apps/plugin-store";
+
+
   type VersionItem = { key: string; label: string; };
 
   let dropdownItems: VersionItem[] = $state([]);
@@ -86,7 +88,7 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
 </div>
 {/if}
 {#if ptrNotification}
-<div class="absolute w-fit p-2 rounded-xl bottom-36 bg-slate-800 ml-80 flex flex-row gap-x-1">
+<div class="absolute w-96 m-2 text-wrap p-2 rounded-xl top-0 right-0 bg-slate-800 ml-80 flex flex-row gap-x-1">
   <p class="text-red-500">
     PTR will not launch (look at lib.rs's launch_wow() function on github for details)
   </p>
@@ -107,7 +109,7 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
   </div>
 </dialog>
 <div class="flex flex-col justify-between h-[100vh] p-20 ">
-  <div class=" max-h-24 2xl:max-h-30">
+  <div class="w-full h-30 2xl:h-40">
     {#if wowTheme}
     <GameLogoPanel 
       theme={wowTheme} 
@@ -122,10 +124,10 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
   
   <div class="flex flex-row gap-4 mt-20 2xl:mt-24 h-64 3xl:h-80">
     <!-- Main Video Section -->
-    <div class="relative flex-1 rounded-xl overflow-hidden shadow-lg">
+    <div class="relative flex-1 rounded-xl overflow-hidden shadow-lg w-lg">
       {#if wowTheme}
       <iframe 
-        class="w-lg h-full" 
+        class="w-full h-full" 
         src={getLayoutConfig(GamePrefix.WoW, wowTheme.activePrefix)?.cinematicUrl}
         title="YouTube video player" 
         frameborder="0" 
@@ -140,7 +142,7 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
     <div class="flex flex-row gap-4 w-80 max-h-full">
       <!-- Advertisement / Event Image -->
       <a href="https://worldofwarcraft.com" target="_blank" class="relative rounded-xl shadow-lg h-full">
-        <img src="../images/wow/wow_leg_remix_art.png" alt="Ad" class="w-64 h-[40%] object-cover  cursor-pointer"/>
+        <img src="../images/wow/wow_leg_remix_art.webp" alt="Ad" class="w-64 h-[40%] object-cover  cursor-pointer"/>
         <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-1 text-sm overflow-clip" style="font-family: frizQuadrata;">
           <h1 class="2xl:text-lg font-semibold mb-2">Legion Remix: Skies of Fire Now Live!</h1>
           <p class="text-sm ">
@@ -164,12 +166,12 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
    
     <div class="flex flex-row items-end justify-between w-full mt-2">
       <div class="flex flex-row items-end gap-x-4">
-        <button onclick={async () => launch_wow()} class=" relative w-64 px-12 py-6 text-4xl cursor-pointer text-white rounded-lg bg-gradient-to-b from-[#4aa1f3] to-[#0077c9] shadow-lg shadow-black/50 transform transition duration-150 ease-in-out hover:scale-105 hover:shadow-xl active:scale-95 active:shadow-md before:absolute before:inset-0 before:rounded-lg before:bg-white before:opacity-0 before:pointer-events-none hover:before:opacity-10">
+        <button onclick={async () => launch_wow()} disabled={ptrNotification} class="disabled:bg-gray-600 disabled:text-gray-400 relative w-64 px-12 py-6 text-4xl disabled:cursor-not-allowed enabled:cursor-pointer enabled:text-white rounded-lg enabled:bg-gradient-to-b from-[#4aa1f3] to-[#0077c9] shadow-lg shadow-black/50 transform transition duration-150 ease-in-out enabled:hover:scale-105 enabled:hover:shadow-xl active:scale-95 active:shadow-md before:absolute before:inset-0 before:rounded-lg enabled:before:bg-white enabled:before:opacity-0 enabled:before:pointer-events-none enabled:hover:before:opacity-10">
           <span class="relative z-10">PLAY</span>
         </button>
         <span class="text-gray-400 text-sm">
-          Version {selected != null ? wowVersions[selected.key] : ''} | View the
-          <a href="https://twistingnether.furyshiftz.com/" target="_blank" class="text-blue-500"> Patch Notes</a>.
+          Version {selected != null ? wowVersions[selected.key] : 'Loading...'} | View the
+          <a href="https://worldofwarcraft.blizzard.com/en-us/content-update-notes" target="_blank" class="text-blue-500"> Patch Notes</a>.
         </span>
       </div>
     </div>

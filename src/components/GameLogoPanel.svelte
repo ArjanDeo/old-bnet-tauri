@@ -24,8 +24,8 @@
   <!-- Logo container -->
   <div class="flex items-center justify-center {sizeClasses[config?.logoSize!]}">
     <img 
-      src="../images/{game}/{game}_{theme.activePrefix}_logo.png" 
-      alt="{game} Logo" 
+      src="../images/{game}/{game}_{theme.activePrefix}_logo.webp" 
+      alt="{game} {theme.activePrefix} logo" 
       class="max-h-full w-auto object-contain"
     />
   </div>

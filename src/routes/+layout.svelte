@@ -12,7 +12,7 @@
 </script>
 <nav class="relative z-50 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 p-6 flex flex-row gap-x-10 flex-none bglsate">
     <button onclick={() => goto("/settings")} class="flex flex-row items-center cursor-pointer">
-      <img src="/images/battle_net_logo.png" alt="battle.net logo" class="w-14 h-14 my-auto mr-6" />
+      <img src="/images/battle_net_logo.webp" alt="battle.net logo" class="w-14 h-14 my-auto mr-6" />
       <ChevronDown />
     </button>
     <NavLink text="GAMES" selected={selectedLink=='GAMES'} onClick={() => goto("/")}/>

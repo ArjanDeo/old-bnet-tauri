@@ -68,7 +68,7 @@ const WoWLayoutConfigs: Record<WoWExpansionPrefix, LayoutConfig> = {
   [WoWExpansionPrefix.WotLK]: { 
     bgFocalPoint: 'center', 
     logoSize: 'medium', 
-    transform: 'transform scale-125',
+    transform: 'transform scale-110',
     cinematicUrl: 'https://www.youtube.com/embed/BCr7y4SLhck'
   },
   [WoWExpansionPrefix.Cata]: { 
