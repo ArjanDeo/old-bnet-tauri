@@ -62,16 +62,16 @@
   </div>
 
   <div class="flex flex-col items-start mb-8 mt-2 w-full">
-    <p class="text-gray-400 font-light mb-2">REGION / ACCOUNT</p><!--
+    <p class="text-gray-400 font-light mb-2">VERSION</p>
+    <!--
     <Dropdown 
       items={dropdownItems.map(i => i.label)} 
       selected={selected?.label || ''} 
       onSelect={(label) => {
         selected = dropdownItems.find(i => i.label === label) || null;
       }} 
-    />-->
-
-   
+    />
+    -->   
     <div class="flex flex-row items-end justify-between w-full mt-2">
       <div class="flex flex-row items-end gap-x-4">
         <button  class=" relative w-64 px-12 py-6 text-4xl cursor-pointer text-white rounded-lg bg-gradient-to-b from-[#4aa1f3] to-[#0077c9] shadow-lg shadow-black/50 transform transition duration-150 ease-in-out hover:scale-105 hover:shadow-xl active:scale-95 active:shadow-md before:absolute before:inset-0 before:rounded-lg before:bg-white before:opacity-0 before:pointer-events-none hover:before:opacity-10">

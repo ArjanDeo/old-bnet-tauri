@@ -144,9 +144,9 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
       <a href="https://worldofwarcraft.com" target="_blank" class="relative rounded-xl shadow-lg h-full">
         <img src="../images/wow/wow_leg_remix_art.webp" alt="Ad" class="w-64 h-[40%] object-cover  cursor-pointer"/>
         <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-1 text-sm overflow-clip" style="font-family: frizQuadrata;">
-          <h1 class="2xl:text-lg font-semibold mb-2">Legion Remix: Skies of Fire Now Live!</h1>
+          <h1 class="2xl:text-lg font-semibold mb-2">Legion Remix: Rise of the Nightfallen Now Live!</h1>
           <p class="text-sm ">
-            Get ready for fast frenetic fun in Legion Remix as you meet up with the infinite dragonflight once more, level new characters, and earn a variety of items to add to your collection.
+            Continue the Nightfallen’s story with the Insurrection campaign and new World Quests across the Broken Isles. Re-experience the Legion mega-dungeon with the Return to Karazhan, and take on the Nighthold raid.
           </p>
         </div>
       </a>
@@ -154,7 +154,7 @@ ptrNotification = (selected?.key.toLowerCase().includes('ptr') ?? false);
   </div>
   
   <div class="flex flex-col items-start mb-8 mt-2 w-full">
-    <p class="text-gray-400 font-light mb-2">REGION / ACCOUNT</p>
+    <p class="text-gray-400 font-light mb-2">VERSION</p>
     <Dropdown 
       items={dropdownItems.map(i => i.label)} 
       selected={selected?.label || ''} 
