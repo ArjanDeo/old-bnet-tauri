@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import { load } from '@tauri-apps/plugin-store';
 
 export enum GamePrefix {
@@ -8,9 +9,6 @@ export enum GamePrefix {
   HOTS = "hots",
   OW = "ow",
 }
-
-
-
 export enum WoWExpansionPrefix {
   Classic = "classic",
   TBC = "tbc",
@@ -39,19 +37,16 @@ export const WoWExpansionLabels: Record<string, WoWExpansionPrefix> = {
   "The War Within": WoWExpansionPrefix.TWW,
   "Midnight": WoWExpansionPrefix.Midnight,
 };
-
 export enum OWPrefix {
   OW = "ow",
   OW2 = "ow2",
 }
-
 export interface LayoutConfig {
   bgFocalPoint: string;
   logoSize: "small" | "medium" | "large" | "xlarge";
   transform: string;
   cinematicUrl: string;
 }
-
 const WoWLayoutConfigs: Record<WoWExpansionPrefix, LayoutConfig> = {
   [WoWExpansionPrefix.Classic]: { 
     bgFocalPoint: 'center', 
@@ -128,7 +123,6 @@ const WoWLayoutConfigs: Record<WoWExpansionPrefix, LayoutConfig> = {
     cinematicUrl: 'https://www.youtube.com/embed/SiIjThwKLaE'
   },
 };
-
 const OWLayoutConfigs: Record<OWPrefix, LayoutConfig> = {
   [OWPrefix.OW]: { 
     bgFocalPoint: 'center', 
@@ -143,31 +137,88 @@ const OWLayoutConfigs: Record<OWPrefix, LayoutConfig> = {
     cinematicUrl: 'https://www.youtube.com/embed/GKXS_YA9s7E'
   }
 };
+const SC2LayoutConfigs: Record<string, LayoutConfig> = {
+  ['sc2']: { 
+    bgFocalPoint: 'center', 
+    logoSize: 'medium', 
+    transform: 'transform scale-125',
+    cinematicUrl: 'https://www.youtube.com/embed/FqnKB22pOC0'
+  }
+};
+const D3LayoutConfigs: Record<string, LayoutConfig> = {
+  ['d3']: { 
+    bgFocalPoint: 'center', 
+    logoSize: 'medium', 
+    transform: 'transform scale-125',
+    cinematicUrl: 'https://www.youtube.com/embed/FqnKB22pOC0'
+  }
+};
+const HSLayoutConfigs: Record<string, LayoutConfig> = {
+  ['hs']: { 
+    bgFocalPoint: 'center', 
+    logoSize: 'medium', 
+    transform: 'transform scale-125',
+    cinematicUrl: 'https://www.youtube.com/embed/FqnKB22pOC0'
+  }
+};
+const HotSLayoutConfigs: Record<string, LayoutConfig> = {
+  ['hots']: { 
+    bgFocalPoint: 'center', 
+    logoSize: 'medium', 
+    transform: 'transform scale-125',
+    cinematicUrl: 'https://www.youtube.com/embed/FqnKB22pOC0'
+  }
+};
+
 export const WoWTheme: GameTheme = {
   game: GamePrefix.WoW,
   activePrefix: WoWExpansionPrefix.Midnight, // default starting expansion
   config: WoWLayoutConfigs, // full config record
 };
-
 export const OWTheme: GameTheme = {
   game: GamePrefix.OW,
   activePrefix: OWPrefix.OW2, // default to OW2
   config: OWLayoutConfigs,
 };
-
-const LayoutsByGame: Record<GamePrefix, Record<string, LayoutConfig>> = {
-  [GamePrefix.WoW]: WoWLayoutConfigs,
-  [GamePrefix.OW]: OWLayoutConfigs,
-  [GamePrefix.SC2]: {},
-  [GamePrefix.D3]: {},
-  [GamePrefix.HS]: {},
-  [GamePrefix.HOTS]: {},
+export const SC2Theme: GameTheme = {
+  game: GamePrefix.SC2,
+  activePrefix: 'sc2', // default starting expansion
+  config: SC2LayoutConfigs, // full config record
+};
+export const D3Theme: GameTheme = {
+  game: GamePrefix.D3,
+  activePrefix: 'd3',
+  config: D3LayoutConfigs,
+};
+export const HSTheme: GameTheme = {
+  game: GamePrefix.HS,
+  activePrefix: 'hs',
+  config: HSLayoutConfigs,
+};
+export const HotSTheme: GameTheme = {
+  game: GamePrefix.HOTS,
+  activePrefix: 'hots',
+  config: HotSLayoutConfigs,
 };
 export interface GameTheme {
   game: GamePrefix,
   activePrefix: string,
   config: Record<string, LayoutConfig>,
 }
+export interface DropdownItem {
+  key: string;
+  label: string;
+}
+
+const LayoutsByGame: Record<GamePrefix, Record<string, LayoutConfig>> = {
+  [GamePrefix.WoW]: WoWLayoutConfigs,
+  [GamePrefix.OW]: OWLayoutConfigs,
+  [GamePrefix.SC2]: SC2LayoutConfigs,
+  [GamePrefix.D3]: D3LayoutConfigs,
+  [GamePrefix.HS]: HSLayoutConfigs,
+  [GamePrefix.HOTS]: HotSLayoutConfigs,
+};
+
 
 const store = await load("store.json");
 
@@ -194,7 +245,16 @@ export async function setTheme(game: GamePrefix, style: string): Promise<void> {
 export function getLayoutConfig(game: GamePrefix, style: string): LayoutConfig | undefined {
   return LayoutsByGame[game]?.[style];
 }
-  export interface DropdownItem {
-    key: string;
-    label: string;
+export async function getWoWPlaytime(): Promise<number> {
+  const playtime = await store.get('wow-playtime')
+  if (!playtime) {
+    const res = await invoke('get_wow_playtime') as number;
+    if (res) {
+      await store.set('wow-playtime', res);
+      await store.save();
+    }
+    return res;
+  } else {
+    return playtime as number;
   }
+}

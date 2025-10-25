@@ -1,11 +1,12 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
+    import { onMount, type Snippet } from "svelte";
     import type { LayoutData } from "./$types";
     import "../app.css";
     import { goto } from "$app/navigation";
     import NavLink from "../components/NavLink.svelte";
     import { ChevronDown } from "lucide-svelte";
     import { page } from "$app/state";
+    import { getFromStore } from "../stores";
 
     let { data, children }: { data: LayoutData, children: Snippet } = $props();
 

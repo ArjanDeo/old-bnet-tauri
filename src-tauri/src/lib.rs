@@ -2,6 +2,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::fs;
+use walkdir::WalkDir;
 use winreg::enums::*;
 use winreg::RegKey;
 use tauri_plugin_store::StoreBuilder;
@@ -41,6 +42,45 @@ pub struct Installed {
     pub product_id: String,
 }
 
+#[tauri::command]
+fn get_wow_playtime() -> Result<u64, String> {
+    // Handle the Option<String>
+    let wow_root = match get_wow_install_path() {
+        Some(path) => PathBuf::from(path),
+        None => return Err("get_wow_install_path returned None".to_string()),
+    };
+
+    let account_path = wow_root.join("WTF").join("Account");
+
+    if !account_path.exists() {
+        return Err(format!("Account path not found: {:?}", account_path));
+    }
+
+    let mut total_playtime: u64 = 0;
+
+    for entry in WalkDir::new(&account_path).into_iter().filter_map(Result::ok) {
+        let path = entry.path();
+
+        // Looking specifically for SavedVariables/TotalPlayed.lua
+        if path.is_file()
+            && path.file_name().map(|f| f == "TotalPlayed.lua").unwrap_or(false)
+            && path.parent().map(|p| p.ends_with("SavedVariables")).unwrap_or(false)
+        {
+            if let Ok(contents) = fs::read_to_string(path) {
+                for line in contents.lines() {
+                    if let Some(stripped) = line.strip_prefix("TotalPlayTime = ") {
+                        if let Ok(seconds) = stripped.trim().parse::<u64>() {
+                            total_playtime += seconds;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(total_playtime)
+}
+
 pub fn parse_build_info<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<WowBuild>> {
     let content = fs::read_to_string(path)?;
     let mut lines = content.lines();
@@ -67,11 +107,12 @@ pub fn parse_build_info<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<WowBuild
 
     Ok(builds)
 }
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+
 #[tauri::command]
 fn locate_wow() -> Option<String> {
     get_wow_install_path()
 }
+
 #[tauri::command]
 fn sync_wow_build(app_handle: tauri::AppHandle) -> Result<String, String> {
     let Some(wow_path) = get_wow_install_path() else {
@@ -110,9 +151,6 @@ fn sync_wow_build(app_handle: tauri::AppHandle) -> Result<String, String> {
 
     Ok("WoW versions synced to store".into())
 }
-
-
-
 
 fn get_wow_install_path() -> Option<String> {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -159,6 +197,7 @@ fn get_wow_install_path() -> Option<String> {
     }
     None
 }
+
 #[tauri::command]
 fn launch_wow(folder_path: &str) -> Result<String, String> {
     let folder_path = folder_path.trim_end_matches('\\');
@@ -184,12 +223,13 @@ fn launch_wow(folder_path: &str) -> Result<String, String> {
 
     Ok("WoW launch command executed.".into())
 }
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![locate_wow, launch_wow, sync_wow_build])
+        .invoke_handler(tauri::generate_handler![locate_wow, launch_wow, sync_wow_build, get_wow_playtime])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

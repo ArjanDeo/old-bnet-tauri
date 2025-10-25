@@ -1,50 +1,85 @@
 <script lang="ts">
-  import { onDestroy, type Snippet } from "svelte";
+  import { onMount, onDestroy, type Snippet } from "svelte";
   import type { LayoutData } from "./$types";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import GameButton from "../../components/GameButton.svelte";
-  import { GameThemeStore } from "../../stores";
+  import { GameThemeStore, getFromStore } from "../../stores";
   import { GamePrefix, type GameTheme } from "../../data";
 
   let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
   let selectedGame = $state<GamePrefix | undefined>();
-  let currentTheme: GameTheme | undefined = $state();
+  let playMusic = $state<boolean>(false);
+  let audio: HTMLAudioElement | null = $state(null);
 
-  // update selected game based on URL
-$effect(() => {
-  switch (page.url.pathname) {
-    case "/games/wow":
-      selectedGame = GamePrefix.WoW
-      break;
-    case "/games/ow":
-      selectedGame = GamePrefix.OW
-      break;
-      case "/games/d3":
-      selectedGame = GamePrefix.D3
-      break;
-      case "/games/hots":
-      selectedGame = GamePrefix.HOTS
-      break;
-      case "/games/hs":
-      selectedGame = GamePrefix.HS
-      break;
-      case "/games/sc2":
-      selectedGame = GamePrefix.SC2
-      break;
-  }
-  currentTheme = $GameThemeStore.find(t => t.game === selectedGame);
-});
-  // subscribe once and reactively filter
-  const unsubscribe = GameThemeStore.subscribe((themes) => {
-    if (selectedGame) {
-      currentTheme = themes.find((t) => t.game === selectedGame);
+  const pathToGame: Record<string, GamePrefix> = {
+    "/games/wow": GamePrefix.WoW,
+    "/games/ow": GamePrefix.OW,
+    "/games/d3": GamePrefix.D3,
+    "/games/hots": GamePrefix.HOTS,
+    "/games/hs": GamePrefix.HS,
+    "/games/sc2": GamePrefix.SC2,
+  };
+
+  // Derived theme from store
+  let currentTheme = $derived.by(() =>
+    $GameThemeStore.find((t) => t.game === selectedGame)
+  );
+
+  // Update selected game reactively based on route
+  $effect(() => {
+    selectedGame = pathToGame[page.url.pathname];
+
+    // Play theme only if conditions are valid and a different track isn’t already playing
+    if (
+      playMusic &&
+      selectedGame &&
+      currentTheme &&
+      (!audio ||
+        audio.paused ||
+        !audio.src.includes(`${selectedGame}_${currentTheme.activePrefix}`))
+    ) {
+      playGameTheme();
     }
   });
 
-  onDestroy(unsubscribe);
+  onMount(async () => {
+    playMusic = (await getFromStore("settings-playMusic")) as boolean;
+    if (playMusic && selectedGame && currentTheme) {
+      playGameTheme();
+    }
+  });
+
+  onDestroy(() => {
+    if (audio instanceof Audio) {
+      audio.pause();
+      audio.src = "";
+      audio = null;
+    }
+  });
+
+  function playGameTheme() {
+    if (!selectedGame || !currentTheme) return;
+
+    // Release old audio first
+    if (audio instanceof Audio) {
+      audio.pause();
+      audio.src = "";
+    }
+
+    const newAudio = new Audio(
+      `/sound/${selectedGame}/${selectedGame}_${currentTheme.activePrefix}_theme.m4a`
+    );
+
+    newAudio.volume = 0.1;
+    newAudio.loop = true;
+    newAudio.play().catch(console.error);
+
+    audio = newAudio;
+  }
 </script>
+
 
 <div class="select-none fixed w-full flex flex-col">
   <div class="fixed inset-0 overflow-hidden">
