@@ -99,7 +99,7 @@
   // Computed values
   const buttonText = $derived(isLaunching ? 'Launching...' : 'PLAY');
   const currentVersion = $derived((selected?.key && wowVersions[selected.key]) ? wowVersions[selected.key] : 'Loading...');
-  const playTimeHours = $derived(playTime > 0 ? Math.round(playTime / 3600) : 0);
+  const playTimeHours = $derived(playTime > 0 ? parseFloat((playTime / 3600).toFixed(2)) : 0);
 </script>
 
 {#if error}

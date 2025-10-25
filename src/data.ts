@@ -246,7 +246,15 @@ export function getLayoutConfig(game: GamePrefix, style: string): LayoutConfig |
   return LayoutsByGame[game]?.[style];
 }
 export async function getWoWPlaytime(): Promise<number> {
-  const playtime = await store.get('wow-playtime')
+  let playtime = await store.get('wow-playtime')
+  const tauriPlaytime = await invoke('get_wow_playtime');
+
+  // Check if playtime has updated since last time it was stored
+  if (playtime as number != tauriPlaytime as number) {
+    await store.set('wow-playtime', tauriPlaytime);
+    playtime = tauriPlaytime;
+  }
+
   if (!playtime) {
     const res = await invoke('get_wow_playtime') as number;
     if (res) {
