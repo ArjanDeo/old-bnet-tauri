@@ -5,12 +5,40 @@ use std::fs;
 use winreg::enums::*;
 use winreg::RegKey;
 use tauri_plugin_store::StoreBuilder;
+use std::fs::File;
+use std::io::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub struct WowBuild {
     pub product: String,
     pub version: String,
     pub branch: String,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BattleNetAggregate {
+    pub installed: Vec<Installed>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Installed {
+    #[serde(rename = "box_art_uri")]
+    pub box_art_uri: String,
+    #[serde(rename = "icon_index")]
+    pub icon_index: i64,
+    #[serde(rename = "icon_path")]
+    pub icon_path: String,
+    #[serde(rename = "last_played_timestamp")]
+    pub last_played_timestamp: i64,
+    #[serde(rename = "launch_uri")]
+    pub launch_uri: String,
+    #[serde(rename = "logo_art_uri")]
+    pub logo_art_uri: String,
+    pub name: String,
+    #[serde(rename = "product_id")]
+    pub product_id: String,
 }
 
 pub fn parse_build_info<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<WowBuild>> {
@@ -102,6 +130,33 @@ fn get_wow_install_path() -> Option<String> {
         }
     }
 
+    // If code reaches here, WoW wasn't found in the windows registry, so look in Battle.Net's ProgramData
+
+    let path = Path::new("C:\\ProgramData\\Battle.net\\Agent\\aggregate.json");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("Couldn't open {}: {}", display, why),
+        Ok(file) => file,
+    };
+
+    let mut aggregate_file_string = String::new();
+    match file.read_to_string(&mut aggregate_file_string) {
+        Err(why) => panic!("couldn't read {}: {}", display, why),
+        Ok(_) => print!("{} contains:\n{}", display, aggregate_file_string),
+    }
+
+    let deserialized_aggregate: BattleNetAggregate = serde_json::from_str(&aggregate_file_string).unwrap();
+
+    for game in deserialized_aggregate.installed {
+        if game.product_id == "wow" {
+            let mut pb = PathBuf::from(game.icon_path); // icon_path is a path to the games launcher (e.g. "X:/Games/World of Warcraft/World of Warcraft Launcher.exe")
+            pb.pop();
+            pb.push("_retail_");
+            let wow_install_path = pb.to_string_lossy().into_owned();
+            return Some(wow_install_path);
+        }
+    }
     None
 }
 #[tauri::command]
