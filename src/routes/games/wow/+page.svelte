@@ -97,7 +97,7 @@
   // Check if PTR or Classic is selected
   $effect(() => {
     ptrNotification = selected?.key.toLowerCase().includes('ptr') ?? false;
-    classicNotification = !!selected?.key?.toLowerCase().includes('classic') && !selected?.key?.toLowerCase().includes('era');
+    classicNotification = !!selected?.key?.toLowerCase().includes('classic') && selected?.key?.toLowerCase().includes('era');
   });
 
   // Computed values
@@ -221,7 +221,7 @@
         <button 
           onclick={launch_wow} 
           disabled={ptrNotification || isLaunching || isLoading || !wowDir} 
-          class="disabled:bg-gray-600 disabled:text-gray-400 relative w-64 px-12 py-6 text-4xl font-bold disabled:cursor-not-allowed enabled:cursor-pointer enabled:text-white rounded-lg enabled:bg-gradient-to-b from-[#4aa1f3] to-[#0077c9] shadow-lg shadow-black/50 transform transition duration-150 ease-in-out enabled:hover:scale-105 enabled:hover:shadow-xl active:scale-95 active:shadow-md before:absolute before:inset-0 before:rounded-lg enabled:before:bg-white enabled:before:opacity-0 enabled:before:pointer-events-none enabled:hover:before:opacity-10"
+          class="disabled:bg-gray-600 disabled:text-gray-400 relative w-64 px-12 py-6 text-4xl font-bold disabled:cursor-not-allowed enabled:cursor-pointer enabled:text-white rounded-lg enabled:bg-gradient-to-b from-[#4aa1f3] to-[#0077c9] shadow-lg shadow-black/50 transform transition duration-150 ease-in-out enabled:hover:scale-105 enabled:hover:shadow-xl enabled:active:scale-95 active:shadow-md before:absolute before:inset-0 before:rounded-lg enabled:before:bg-white enabled:before:opacity-0 enabled:before:pointer-events-none enabled:hover:before:opacity-10"
           aria-label={buttonText}
         >
           <span class="relative z-10">{buttonText}</span>
