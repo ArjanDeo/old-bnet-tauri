@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
-  import { CircleX, Settings, SquareCheckBig } from 'lucide-svelte';
+  import { CircleX, Settings, SquareCheckBig, InfoIcon } from 'lucide-svelte';
   import GameLogoPanel from "../../../components/GameLogoPanel.svelte";
   import Dropdown from "../../../components/dropdown.svelte";
   import { GamePrefix, WoWExpansionPrefix, getLayoutConfig, getWoWPlaytime, type GameTheme } from "../../../data";
@@ -16,6 +16,7 @@
   let error = $state("");
   let wowVersions: Record<string, string> = $state({});
   let ptrNotification = $state(false);
+  let classicNotification = $state(false);
   let playTime = $state(0);
   let isLaunching = $state(false);
   let isLoading = $state(true);
@@ -29,7 +30,7 @@
     error = "";
 
     try {
-      await invoke("launch_wow", { folderPath: wowDir, version: selected?.key });
+      await invoke("launch_game", { folderPath: wowDir, version: selected?.key, game: "wow" });
     } catch (e: any) {
       error = e?.toString() || "Failed to launch WoW";
       console.error("Launch error:", e);
@@ -45,7 +46,7 @@
 
     try {
       // Load WoW directory
-      wowDir = await invoke("locate_wow");
+      wowDir = await invoke("locate_game", {game: "wow"});
 
       if (!wowDir) {
         const modal = document.getElementById("setDirectoryModal") as HTMLDialogElement;
@@ -53,7 +54,7 @@
       }
 
       // Sync WoW build info
-      const res = await invoke<string>("sync_wow_build");
+      const res = await invoke<string>("sync_game_build", {game: "wow"});
       console.log("Sync result:", res);
 
       // Load versions from store
@@ -66,6 +67,8 @@
       dropdownItems = Object.entries(wowVersions).map(([key, version]) => {
         if (key === "wow") return { key, label: "World of Warcraft" };
         if (key === "wowxptr") return { key, label: `PTR (${version})` };
+        if (key === "wow_classic_era") return { key, label: `World of Warcraft: Classic` };
+        if (key === "wow_classic") return { key, label: `Mists of Pandaria Classic` };
         return { key, label: key };
       });
 
@@ -91,9 +94,10 @@
     unsubscribe?.();
   });
 
-  // Check if PTR is selected
+  // Check if PTR or Classic is selected
   $effect(() => {
     ptrNotification = selected?.key.toLowerCase().includes('ptr') ?? false;
+    classicNotification = !!selected?.key?.toLowerCase().includes('classic') && !selected?.key?.toLowerCase().includes('era');
   });
 
   // Computed values
@@ -111,17 +115,6 @@
 </div>
 {/if}
 
-{#if ptrNotification}
-<div class="absolute w-96 m-2 text-wrap p-4 rounded-xl top-0 right-0 bg-slate-800 shadow-lg flex flex-row gap-2 items-start z-50">
-  <p class="text-red-400 flex-1 text-sm">
-    PTR will not launch (look at lib.rs's launch_wow() function on GitHub for details)
-  </p>
-  <button class="cursor-pointer hover:opacity-70 flex-shrink-0" onclick={() => ptrNotification = false}>
-    <CircleX size="18" color="grey"/>
-  </button>
-</div>
-{/if}
-
 <dialog id="wowDirModal" class="modal">
   <div class="modal-box">
     <h3 class="font-bold text-lg">WoW Directory Not Found</h3>
@@ -134,7 +127,7 @@
   </div>
 </dialog>
 
-<div class="flex flex-col justify-between h-[100vh] p-20">
+<div class="flex flex-col justify-between h-[100vh] p-24">
   <div class="w-full h-30 2xl:h-40">
     {#if wowTheme}
     <GameLogoPanel 
@@ -148,9 +141,9 @@
     {/if}
   </div>
   
-  <div class="flex flex-row gap-4 mt-20 2xl:mt-24 h-72 3xl:h-80">
+  <div class="flex flex-row gap-4 mt-20 2xl:mt-24 h-60 2xl:h-72 3xl:h-80">
     <!-- Main Video Section -->
-    <div class="relative flex-1 rounded-xl overflow-hidden w-lg shadow-lg">
+    <div class="relative flex-1 rounded-xl overflow-hidden w-md 2xl:w-lg shadow-lg">
       {#if wowTheme}
       <iframe 
         class="w-full h-full" 
@@ -190,16 +183,40 @@
   </div>
   
   <div class="flex flex-col items-start mb-8 mt-2 w-full">
-    <p class="text-gray-400 font-light mb-2 text-sm uppercase tracking-wide">Version</p>
-    <Dropdown 
-      items={dropdownItems.map(i => i.label)} 
-      selected={selected?.label || ''} 
-      onSelect={(label) => {
-        selected = dropdownItems.find(i => i.label === label) || null;
-      }} 
-    />
+    <div class="flex items-center gap-2 mb-2">
+      <p class="text-gray-400 font-light text-sm uppercase tracking-wide">Version</p>
+      
+    </div>
+    <div class="flex flex-row gap-x-2">
+        <Dropdown 
+          items={dropdownItems.map(i => i.label)} 
+          selected={selected?.label || ''} 
+          onSelect={(label) => {
+            selected = dropdownItems.find(i => i.label === label) || null;
+          }} 
+        />
+      {#if ptrNotification}
+      <div class="relative group">
+        <InfoIcon size="16" class="text-red-500 hover:text-red-400 transition-colors" />
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
+          PTR will not launch as a result of Blizzard's limitations with launcher codes.
+          <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+        </div>
+      </div>
+      {/if}
+      {#if classicNotification}
+      <div class="relative group">
+        <InfoIcon size="16" class="text-blue-400 hover:text-blue-300 transition-colors" />
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
+          This will only launch Mists of Pandaria Classic as a result of Blizzard's limitations with launcher codes.
+          <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+        </div>
+      </div>
+      {/if}
+    </div>
+   
 
-    <div class="flex flex-row items-end justify-between w-full mt-4">
+    <div class="flex flex-row items-end justify-between w-full mt-2">
       <div class="flex flex-row items-end gap-x-4">
         <button 
           onclick={launch_wow} 
@@ -220,7 +237,7 @@
               href="https://worldofwarcraft.blizzard.com/en-us/content-update-notes" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="text-blue-500 hover:text-blue-400 transition-colors underline"
+              class="text-blue-500 hover:text-blue-400 transition-colors"
             >
               Patch Notes
             </a>
