@@ -2,8 +2,10 @@ import { writable, type Writable } from 'svelte/store';
 import { load, Store } from '@tauri-apps/plugin-store';
 import { D3Theme, HotSTheme, HSTheme, OWTheme, SC2Theme, WoWTheme, type GameTheme } from './data';
 import { browser } from '$app/environment';
+
 let store: Store | null = null;
 let storeInitialized = false;
+
 // Async function to initialize store
 async function initStore() {
   if (!browser || storeInitialized) return;
@@ -19,24 +21,29 @@ async function initStore() {
     } else {
       GameThemeStore.set([WoWTheme, OWTheme, D3Theme, SC2Theme, HSTheme, HotSTheme]);
     }
+
   } catch (error) {
     console.error('Failed to initialize store:', error);
     // Fallback to default themes
     GameThemeStore.set([WoWTheme, OWTheme, D3Theme, SC2Theme, HSTheme, HotSTheme]);
   }
 }
+
 // Create Svelte store
 export const GameThemeStore: Writable<GameTheme[]> = writable([]);
+
 // Initialize store (non-blocking)
 if (browser) {
   initStore();
 }
+
 // Persist changes automatically
 GameThemeStore.subscribe((value) => {
   if (storeInitialized) {
     persistThemes(value);
   }
 });
+
 async function persistThemes(value: GameTheme[]) {
   if (store) {
     try {
@@ -47,6 +54,7 @@ async function persistThemes(value: GameTheme[]) {
     }
   }
 }
+
 export async function getFromStore(key: string): Promise<any> {
   if (!storeInitialized) {
     await initStore();
@@ -56,6 +64,7 @@ export async function getFromStore(key: string): Promise<any> {
   }
   return null;
 }
+
 export async function setToStore(key: string, value: any): Promise<boolean> {
   if (!storeInitialized) {
     await initStore();
