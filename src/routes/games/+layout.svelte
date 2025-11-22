@@ -70,7 +70,7 @@
     }
 
     const newAudio = new Audio(
-      `${dev ? 'https://localhost:7176/' : 'https://twistingnetherapi.furyshiftz.com/'}music/${selectedGame}_${currentTheme.activePrefix}_theme.m4a`
+      `${dev ? 'https://localhost:7176/' : 'https://twistingnetherapi.furyshiftz.com/'}music/${selectedGame}_${currentTheme.activePrefix}_theme.mp3`
     );
 
     newAudio.volume = 0.1;
