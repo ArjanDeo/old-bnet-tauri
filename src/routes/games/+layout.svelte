@@ -7,7 +7,7 @@
   import { GameThemeStore, getFromStore } from "../../stores";
   import { GamePrefix, type GameTheme } from "../../data";
     import { dev } from "$app/environment";
-
+import { getCurrentWindow  } from "@tauri-apps/api/window";
   let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
   let selectedGame = $state<GamePrefix | undefined>();
@@ -30,6 +30,8 @@
 
   // Update selected game reactively based on route
   $effect(() => {
+    if (typeof window === "undefined") return;
+
     selectedGame = pathToGame[page.url.pathname];
 
     // Play theme only if conditions are valid and a different track isn’t already playing
@@ -43,6 +45,25 @@
     ) {
       playGameTheme();
     }
+     const pauseOnBlur = () => {
+    if (audio instanceof Audio) audio.pause();
+  };
+
+  // Optional: resume when focused again
+  const resumeOnFocus = () => {
+    if (playMusic && audio instanceof Audio && audio.paused) {
+      audio.play().catch(() => {});
+    }
+  };
+
+  const unlistenBlur = getCurrentWindow().listen("tauri://blur", pauseOnBlur);
+  const unlistenFocus = getCurrentWindow().listen("tauri://focus", resumeOnFocus);
+
+  // Cleanup when reactive dependencies change or component unmounts
+  return () => {
+    unlistenBlur.then((fn) => fn());
+    unlistenFocus.then((fn) => fn());
+  };
   });
 
   onMount(async () => {

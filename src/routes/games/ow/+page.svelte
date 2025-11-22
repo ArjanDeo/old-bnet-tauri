@@ -155,7 +155,7 @@
               class="w-64 h-[40%] object-cover cursor-pointer"
             />
 
-            <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
+            <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm">
               <h2 class="2xl:text-lg font-semibold mb-2">
                 {newsPosts[index].title}
               </h2>
