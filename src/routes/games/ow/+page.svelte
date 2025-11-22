@@ -3,9 +3,10 @@
   import { CircleX, Settings, SquareCheckBig } from 'lucide-svelte';
   import GameLogoPanel from "../../../components/GameLogoPanel.svelte";
   import Dropdown from "../../../components/dropdown.svelte";
-  import { GamePrefix, getLayoutConfig, type GameTheme } from "../../../data";
+  import { GamePrefix, getLayoutConfig, type GameTheme, type OverwatchNewsPost } from "../../../data";
   import { GameThemeStore, getFromStore } from "../../../stores";
   import { onMount, onDestroy } from "svelte";
+    import { dev } from "$app/environment";
 
   type VersionItem = { key: string; label: string; };
 
@@ -17,7 +18,16 @@
   let owVersions: Record<string, string> = $state({});
   let isLaunching = $state(false);
   let isLoading = $state(true);
+  let newsPosts: Array<OverwatchNewsPost> | undefined = $state();
+  let index = $state(0);
+  const INTERVAL = 5000; // 5 seconds
 
+  // Rotate automatically
+  const interval = setInterval(() => {
+    if (newsPosts && newsPosts.length > 0) {
+      index = (index + 1) % newsPosts.length;
+    }
+  }, INTERVAL);
   let unsubscribe: (() => void) | null = null;
 
   async function launch_ow() {
@@ -74,9 +84,14 @@
     } finally {
       isLoading = false;
     }
+    const newsPostsRes = await fetch(`${dev ? 'https://localhost:7176' : 'https://twistingnetherapi.furyshiftz.com'}/api/general/overwatch-news`);
+    if (newsPostsRes.ok) {
+      newsPosts = await newsPostsRes.json();
+    }
   });
 
   onDestroy(() => {
+    clearInterval(interval);
     unsubscribe?.();
   });
 
@@ -126,26 +141,47 @@
     
     <!-- Right Column: Ads / Info -->
     <div class="flex flex-row gap-4 w-80 max-h-full">
-      <a 
-        href="https://overwatch.blizzard.com/en-us/news/24239094/director-s-take-three-strong/" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow"
-      >
-        <img 
-          src="https://bnetcmsus-a.akamaihd.net/cms/blog_header/ss/SSSBX1A86IBK1759452450416.png" 
-          alt="Director's Take: Three Strong" 
-          class="w-64 h-[40%] object-cover cursor-pointer"
-        />
-        <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm">
-          <h2 class="2xl:text-lg font-semibold mb-2">
-            Director's Take: Three Strong
-          </h2>
-          <p class="text-sm leading-relaxed">
-            For Overwatch 2's third anniversary, three of our directors—Aaron Keller, Alec Dawson, and Dion Rogers—reflect on the game's history and the action-packed journey ahead.
-          </p>
-        </div>
-      </a>
+      {#if newsPosts && newsPosts.length > 0}
+        {#key index}
+          <a 
+            href={newsPosts[index].link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block"
+          >
+            <img 
+              src={newsPosts[index].image}
+              alt={newsPosts[index].title}
+              class="w-64 h-[40%] object-cover cursor-pointer"
+            />
+
+            <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
+              <h2 class="2xl:text-lg font-semibold mb-2">
+                {newsPosts[index].title}
+              </h2>
+            </div>
+          </a>
+        {/key}
+        {:else}
+        <div class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block">
+            <div class="w-64 h-[40%] object-cover cursor-pointer bg-[#292a33]">
+              <div class="w-full h-full bg-[#292a33] skeleton animate-pulse">
+              </div>
+            </div>
+
+            <div class="h-[60%] bg-[#292a33] max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
+              <div class="2xl:text-lg font-semibold mb-2 bg-gray-500 h-6 skeleton animate-pulse">
+              </div>
+
+              <p class="text-sm leading-relaxed bg-gray-500 h-3 w-full skeleton animate-pulse">
+              </p>
+              <p class="text-sm leading-relaxed bg-gray-500 h-3 w-full mt-2 skeleton animate-pulse">
+              </p>
+              <p class="text-sm leading-relaxed bg-gray-500 h-3 w-2/3 mt-2 skeleton animate-pulse">
+              </p>
+            </div>
+          </div>
+      {/if}
     </div>
   </div>
   

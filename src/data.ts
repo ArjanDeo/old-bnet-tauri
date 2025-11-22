@@ -272,3 +272,8 @@ export interface WowNewsPost {
   subtitle: string,
   link: string
 }
+export interface OverwatchNewsPost {
+  title: string,
+  image: string,
+  link: string
+}

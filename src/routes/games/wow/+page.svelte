@@ -177,36 +177,53 @@
     
     <!-- Right Column: Ads / Info -->
     <div class="flex flex-row gap-4 w-80 max-h-full">
-  {#if newsPosts && newsPosts.length > 0}
-    {#key index}
-      <a 
-        href={newsPosts[index].link}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block"
-      >
-        <img 
-          src={"https://" + newsPosts[index].image}
-          alt={newsPosts[index].title}
-          class="w-64 h-[40%] object-cover cursor-pointer"
-        />
+      {#if newsPosts && newsPosts.length > 0}
+        {#key index}
+          <a 
+            href={newsPosts[index].link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block"
+          >
+            <img 
+              src={newsPosts[index].image}
+              alt={newsPosts[index].title}
+              class="w-64 h-[40%] object-cover cursor-pointer"
+            />
 
-        <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
-          <h2 class="2xl:text-lg font-semibold mb-2">
-            {newsPosts[index].title}
-          </h2>
+            <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
+              <h2 class="2xl:text-lg font-semibold mb-2">
+                {newsPosts[index].title}
+              </h2>
 
-          <p class="text-sm leading-relaxed">
-            {newsPosts[index].subtitle}
-          </p>
-        </div>
-      </a>
-    {/key}
-  {/if}
-</div>
+              <p class="text-sm leading-relaxed">
+                {newsPosts[index].subtitle}
+              </p>
+            </div>
+          </a>
+        {/key}
+        {:else}
+        <div class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block">
+            <div class="w-64 h-[40%] object-cover cursor-pointer bg-[#292a33]">
+              <div class="w-full h-full bg-[#292a33] skeleton animate-pulse">
+              </div>
+            </div>
 
+            <div class="h-[60%] bg-[#292a33] max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
+              <div class="2xl:text-lg font-semibold mb-2 bg-gray-500 h-6 skeleton animate-pulse">
+              </div>
+
+              <p class="text-sm leading-relaxed bg-gray-500 h-3 w-full skeleton animate-pulse">
+              </p>
+              <p class="text-sm leading-relaxed bg-gray-500 h-3 w-full mt-2 skeleton animate-pulse">
+              </p>
+              <p class="text-sm leading-relaxed bg-gray-500 h-3 w-2/3 mt-2 skeleton animate-pulse">
+              </p>
+            </div>
+          </div>
+      {/if}
+    </div>
   </div>
-  
   <div class="flex flex-col items-start mb-8 mt-2 w-full">
     <div class="flex items-center gap-2 mb-2">
       <p class="text-gray-400 font-light text-sm uppercase tracking-wide">Version</p>
