@@ -3,9 +3,10 @@
   import { CircleX, Settings, SquareCheckBig, InfoIcon } from 'lucide-svelte';
   import GameLogoPanel from "../../../components/GameLogoPanel.svelte";
   import Dropdown from "../../../components/dropdown.svelte";
-  import { GamePrefix, WoWExpansionPrefix, getLayoutConfig, getWoWPlaytime, type GameTheme } from "../../../data";
+  import { GamePrefix, WoWExpansionPrefix, getLayoutConfig, getWoWPlaytime, type GameTheme, type WowNewsPost } from "../../../data";
   import { GameThemeStore, getFromStore } from "../../../stores";
   import { onMount, onDestroy } from "svelte";
+    import { dev } from "$app/environment";
 
   type VersionItem = { key: string; label: string; };
 
@@ -20,6 +21,16 @@
   let playTime = $state(0);
   let isLaunching = $state(false);
   let isLoading = $state(true);
+  let newsPosts: Array<WowNewsPost> | undefined = $state();
+  let index = $state(0);
+  const INTERVAL = 5000; // 5 seconds
+
+  // Rotate automatically
+  const interval = setInterval(() => {
+    if (newsPosts && newsPosts.length > 0) {
+      index = (index + 1) % newsPosts.length;
+    }
+  }, INTERVAL);
 
   let unsubscribe: (() => void) | null = null;
 
@@ -66,9 +77,10 @@
       // Build dropdown items
       dropdownItems = Object.entries(wowVersions).map(([key, version]) => {
         if (key === "wow") return { key, label: "World of Warcraft" };
-        if (key === "wowxptr") return { key, label: `PTR (${version})` };
+        if (key === "wowxptr" || key ==="wowt") return { key, label: `World of Warcraft: PTR` };
         if (key === "wow_classic_era") return { key, label: `World of Warcraft: Classic` };
         if (key === "wow_classic") return { key, label: `Mists of Pandaria Classic` };
+        if (key === "wow_beta") return { key, label: `Midnight Beta` };
         return { key, label: key };
       });
 
@@ -88,15 +100,21 @@
     } finally {
       isLoading = false;
     }
+
+    const newsPostsRes = await fetch(`${dev ? 'https://localhost:7176' : 'https://twistingnetherapi.furyshiftz.com'}/api/general/wow-news`);
+    if (newsPostsRes.ok) {
+      newsPosts = await newsPostsRes.json();
+    }
   });
 
   onDestroy(() => {
+    clearInterval(interval);
     unsubscribe?.();
   });
 
   // Check if PTR or Classic is selected
   $effect(() => {
-    ptrNotification = selected?.key.toLowerCase().includes('ptr') ?? false;
+    ptrNotification = (selected?.key.toLowerCase().includes('ptr') || selected?.key.toLowerCase().includes('wowt')) ?? false;
     classicNotification = !!selected?.key?.toLowerCase().includes('classic') && selected?.key?.toLowerCase().includes('era');
   });
 
@@ -159,27 +177,34 @@
     
     <!-- Right Column: Ads / Info -->
     <div class="flex flex-row gap-4 w-80 max-h-full">
+  {#if newsPosts && newsPosts.length > 0}
+    {#key index}
       <a 
-        href="https://worldofwarcraft.com" 
-        target="_blank" 
+        href={newsPosts[index].link}
+        target="_blank"
         rel="noopener noreferrer"
-        class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow"
+        class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block"
       >
         <img 
-          src="../images/wow/wow_leg_remix_art.webp" 
-          alt="Legion Remix: Rise of the Nightfallen" 
+          src={"https://" + newsPosts[index].image}
+          alt={newsPosts[index].title}
           class="w-64 h-[40%] object-cover cursor-pointer"
         />
+
         <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
           <h2 class="2xl:text-lg font-semibold mb-2">
-            Legion Remix: Rise of the Nightfallen Now Live!
+            {newsPosts[index].title}
           </h2>
+
           <p class="text-sm leading-relaxed">
-            Continue the Nightfallen's story with the Insurrection campaign and new World Quests across the Broken Isles. Re-experience the Legion mega-dungeon with the Return to Karazhan, and take on the Nighthold raid.
+            {newsPosts[index].subtitle}
           </p>
         </div>
       </a>
-    </div>
+    {/key}
+  {/if}
+</div>
+
   </div>
   
   <div class="flex flex-col items-start mb-8 mt-2 w-full">

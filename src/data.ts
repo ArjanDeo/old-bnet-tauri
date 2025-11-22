@@ -266,3 +266,9 @@ export async function getWoWPlaytime(): Promise<number> {
     return playtime as number;
   }
 }
+export interface WowNewsPost {
+  title: string,
+  image: string,
+  subtitle: string,
+  link: string
+}

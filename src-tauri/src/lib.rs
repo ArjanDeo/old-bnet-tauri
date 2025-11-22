@@ -161,7 +161,7 @@ fn sync_game_build(app_handle: tauri::AppHandle, game: String) -> Result<String,
 
 fn get_game_product_prefixes(game: &str) -> Vec<&str> {
     match game.to_lowercase().as_str() {
-        "wow" => vec!["wow", "wowxptr", "wow_classic", "wow_classic_era"],
+        "wow" => vec!["wow", "wowxptr", "wowt", "wow_beta", "wow_classic", "wow_classic_era"],
         "ow" => vec!["pro"],
         "sc2" => vec!["s2"],
         _ => vec![],
