@@ -6,6 +6,7 @@
   import GameButton from "../../components/GameButton.svelte";
   import { GameThemeStore, getFromStore } from "../../stores";
   import { GamePrefix, type GameTheme } from "../../data";
+    import { dev } from "$app/environment";
 
   let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -69,7 +70,7 @@
     }
 
     const newAudio = new Audio(
-      `/sound/${selectedGame}/${selectedGame}_${currentTheme.activePrefix}_theme.m4a`
+      `${dev ? 'https://localhost:7176/' : 'https://twistingnetherapi.furyshiftz.com/'}music/${selectedGame}_${currentTheme.activePrefix}_theme.m4a`
     );
 
     newAudio.volume = 0.1;
