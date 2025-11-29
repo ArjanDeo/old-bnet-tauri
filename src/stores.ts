@@ -6,6 +6,46 @@ import { browser } from '$app/environment';
 let store: Store | null = null;
 let storeInitialized = false;
 
+async function persistThemesIfChanged(newThemes: GameTheme[]) {
+  if (!store) return;
+
+  const savedThemes = await store.get<GameTheme[]>("game-themes") ?? [];
+
+  // Build updatedThemes by merging only changed configs
+  const updated = newThemes.map(newItem => {
+    const existing = savedThemes.find(s => s.game === newItem.game);
+
+    if (!existing) {
+      // Not saved before → save whole object
+      return newItem;
+    }
+
+    // Compare config only
+    const configChanged = JSON.stringify(existing.config) !== JSON.stringify(newItem.config);
+
+    if (!configChanged) {
+      // No config changes → reuse the existing one (don’t overwrite)
+      return existing;
+    }
+
+    // Config changed → merge keeping static defaults from newItem
+    return {
+      ...existing,          // user-specific saved values
+      ...newItem,           // static up-to-date defaults (name, icon, etc)
+      config: {
+        ...existing.config,
+        ...newItem.config   // changed config only
+      }
+    };
+  });
+
+  // Save final merged array
+  await store.set("game-themes", updated);
+  await store.save();
+}
+
+
+
 // Async function to initialize store
 async function initStore() {
   if (!browser || storeInitialized) return;
@@ -40,7 +80,7 @@ if (browser) {
 // Persist changes automatically
 GameThemeStore.subscribe((value) => {
   if (storeInitialized) {
-    persistThemes(value);
+    persistThemesIfChanged(value);
   }
 });
 

@@ -416,3 +416,8 @@ export type WowProfileData = {
     href: string
   }
 }
+export const getBattleNetToken = async() => await getFromStore('access_token');
+export type VersionNotification =  {
+  notificationType: "Warning" | "Error",
+  message: string
+}

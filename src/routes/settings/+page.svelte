@@ -103,6 +103,9 @@ async function checkAuth() {
 
   return win;
   }
+  const resetThemeCache = async () => {
+    
+  }
 </script>
 
 <div class="w-full p-4">
@@ -152,12 +155,12 @@ async function checkAuth() {
   </section>
   <section class="mt-6">
     <div class="relative group">
-        <InfoIcon size="16" class="text-blue-400 hover:text-blue-300 transition-colors" />
-          <div class="absolute  bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
-            Connecting to your Battle.Net account gives access to advanced features like WoW character overviews.
-            <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
-          </div>
-        </div>
+      <InfoIcon size="16" class="text-blue-400 hover:text-blue-300 transition-colors" />
+      <div class="absolute  bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
+        Connecting to your Battle.Net account gives access to advanced features like WoW character overviews.
+        <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+      </div>
+    </div>
     <button 
       onclick={startBnetOAuth} 
       class="bg-blue-700 hover:bg-blue-800 transition-colors ease-in cursor-pointer p-4 rounded-xl flex flex-row gap-x-2"
@@ -169,6 +172,20 @@ async function checkAuth() {
       {:else}
         Connect to Battle.Net account
       {/if}
+    </button>
+        <div class="relative group  mt-4">
+      <InfoIcon size="16" class="text-blue-400 hover:text-blue-300 transition-colors" />
+      <div class="absolute  bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
+        Resetting theme cache can help fix UI issues.
+        <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+      </div>
+    </div>
+    <button 
+      onclick={resetThemeCache} 
+      class="bg-blue-700 hover:bg-blue-800 transition-colors ease-in cursor-pointer p-2 rounded-md mt-0.5"
+      disabled={isAuthenticated}
+    >
+      Reset Theme Cache
     </button>
   </section>
 </div>

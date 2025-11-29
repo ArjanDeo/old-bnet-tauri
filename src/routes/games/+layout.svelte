@@ -33,7 +33,6 @@ import { getCurrentWindow  } from "@tauri-apps/api/window";
     if (typeof window === "undefined") return;
 
     selectedGame = pathToGame[page.url.pathname];
-
     // Play theme only if conditions are valid and a different track isn’t already playing
     if (
       playMusic &&

@@ -5,7 +5,7 @@
     import "../app.css";
     import { goto } from "$app/navigation";
     import NavLink from "../components/NavLink.svelte";
-    import { ChevronDown, MinusIcon, RectangleHorizontalIcon, XIcon } from "lucide-svelte";
+    import { ChevronDown, MinusIcon, RectangleHorizontalIcon, XIcon, User } from "lucide-svelte";
     import { page } from "$app/state";
     import { getFromStore, setToStore } from "../stores";
     import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -66,7 +66,6 @@
     if (authenticated) {
     const token  = await getFromStore('access_token');
     userInfo =  await invoke('get_user_info', {accessToken: token}) as UserInfo;
-    console.log(userInfo)
     }
 
 });
@@ -95,8 +94,14 @@
     <NavLink text="SHOP" selected={selectedLink === 'SHOP'} onClick={() => goto("/shop")}/>
     <NavLink text="NEWS" selected={selectedLink === 'NEWS'} onClick={() => goto("/news")}/>
         {#if userInfo}
-        <div class="ml-auto">
-            <h1>Logged in as {userInfo.battletag}</h1>
+        <div class="ml-auto flex items-center gap-3 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600/40 to-blue-800/40 border border-blue-500/30 hover:border-blue-400/50 transition-all duration-200 backdrop-blur-sm">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
+                <User size={18} className="text-white" />
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Logged in as</span>
+                <span class="text-sm font-bold text-white tracking-wide">{userInfo.battletag}</span>
+            </div>
         </div>
         {/if}
 </nav>

@@ -3,10 +3,10 @@
   import { CircleX, Settings, SquareCheckBig, InfoIcon } from 'lucide-svelte';
   import GameLogoPanel from "../../../components/GameLogoPanel.svelte";
   import Dropdown from "../../../components/dropdown.svelte";
-  import { GamePrefix, WoWExpansionPrefix, getLayoutConfig, getWoWPlaytime, type GameTheme, type WowNewsPost, type WowProfileData } from "../../../data";
+  import { GamePrefix, getBattleNetToken, getLayoutConfig, getWoWPlaytime, type GameTheme, type VersionNotification, type WowNewsPost, type WowProfileData, } from "../../../data";
   import { GameThemeStore, getFromStore } from "../../../stores";
   import { onMount, onDestroy } from "svelte";
-    import { dev } from "$app/environment";
+  import { dev } from "$app/environment";
 
   type VersionItem = { key: string; label: string; };
 
@@ -16,22 +16,43 @@
   let wowTheme = $state<GameTheme>();
   let error = $state("");
   let wowVersions: Record<string, string> = $state({});
-  let ptrNotification = $state(false);
-  let classicNotification = $state(false);
+  let versionNotification = <VersionNotification | undefined>$state();
   let playTime = $state(0);
   let isLaunching = $state(false);
   let isLoading = $state(true);
   let newsPosts: Array<WowNewsPost> | undefined = $state();
   let index = $state(0);
-  let wowProfile = <WowProfileData> $state();
-  const INTERVAL = 5000; // 5 seconds
+  let wowProfile = <WowProfileData>$state();
+  let selectedRealm = $state('all');
+  let selectedAccount = $state(0);
+  let sortBy = $state('name'); // name, level
 
-  // Rotate automatically
+  const accounts = $derived(wowProfile?.wow_accounts || []);
+  const characters = $derived(accounts[selectedAccount]?.characters || []);
+  const realms = $derived([...new Set(characters.map(c => c.realm?.name?.en_US).filter(Boolean))].sort());
+  const buttonText = $derived(isLaunching ? 'Launching...' : 'PLAY');
+  const currentVersion = $derived((selected?.key && wowVersions[selected.key]) ? wowVersions[selected.key] : 'Loading...');
+  const playTimeHours = $derived(playTime > 0 ? parseFloat((playTime / 3600).toFixed(2)) : 0);
+  const filteredCharacters = $derived.by(() => {
+    let filtered = characters.filter(char => {
+      if (selectedRealm !== 'all' && char.realm?.name?.en_US !== selectedRealm) {
+        return false;
+      }
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'level') {
+        return b.level - a.level; // descending
+      }
+      return a.name.localeCompare(b.name); // alpha
+    });
+  });
   const interval = setInterval(() => {
     if (newsPosts && newsPosts.length > 0) {
       index = (index + 1) % newsPosts.length;
     }
-  }, INTERVAL);
+  }, 5000);
 
   let unsubscribe: (() => void) | null = null;
 
@@ -76,7 +97,7 @@
       }
 
       // Build dropdown items
-      dropdownItems = Object.entries(wowVersions).map(([key, version]) => {
+      dropdownItems = Object.entries(wowVersions).map(([key]) => {
         if (key === "wow") return { key, label: "World of Warcraft" };
         if (key === "wowxptr" || key ==="wowt") return { key, label: `World of Warcraft: PTR` };
         if (key === "wow_classic_era") return { key, label: `World of Warcraft: Classic` };
@@ -107,7 +128,6 @@
       newsPosts = await newsPostsRes.json();
     }
     wowProfile = await invoke("fetch_wow_profile", {authToken : await getBattleNetToken()})
-    console.log(wowProfile)
   });
 
   onDestroy(() => {
@@ -115,42 +135,41 @@
     unsubscribe?.();
   });
 
-  // Check if PTR or Classic is selected
   $effect(() => {
-    ptrNotification = (selected?.key.toLowerCase().includes('ptr') || selected?.key.toLowerCase().includes('wowt')) ?? false;
-    classicNotification = !!selected?.key?.toLowerCase().includes('classic') && selected?.key?.toLowerCase().includes('era');
+    switch (selected?.key.toLowerCase()) {
+      case 'wowxptr':
+      case 'wowt':
+        versionNotification = { message: "PTR will not launch as a result of Blizzard's limitations with launcher codes.", notificationType: "Error"}
+        break;
+      case 'wow_classic_era':
+        versionNotification = { message: "This will only launch Mists of Pandaria Classic as a result of Blizzard's limitations with launcher codes.", notificationType: "Warning"}
+        break;
+      case 'wow_beta':
+        versionNotification = { message: "Beta will not launch as a result of Blizzard's limitations with launcher codes.", notificationType: "Error"}
+        break;
+      default:
+        versionNotification = undefined;
+        break;
+    }
   });
-
-  // Computed values
-  const buttonText = $derived(isLaunching ? 'Launching...' : 'PLAY');
-  const currentVersion = $derived((selected?.key && wowVersions[selected.key]) ? wowVersions[selected.key] : 'Loading...');
-  const playTimeHours = $derived(playTime > 0 ? parseFloat((playTime / 3600).toFixed(2)) : 0);
-  
-const getBattleNetToken = async() => await getFromStore('access_token');
-
- let selectedRealm = $state('all');
-  let selectedAccount = $state(0);
-  let sortBy = $state('name'); // name, level
-
-  let accounts = $derived(wowProfile?.wow_accounts || []);
-  let characters = $derived(accounts[selectedAccount]?.characters || []);
-  let realms = $derived([...new Set(characters.map(c => c.realm?.name?.en_US).filter(Boolean))].sort());
-  
-  let filteredCharacters = $derived.by(() => {
-    let filtered = characters.filter(char => {
-      if (selectedRealm !== 'all' && char.realm?.name?.en_US !== selectedRealm) {
-        return false;
-      }
-      return true;
-    });
-
-    return filtered.sort((a, b) => {
-      if (sortBy === 'level') {
-        return b.level - a.level; // descending
-      }
-      return a.name.localeCompare(b.name); // alpha
-    });
-  });
+  function getClassColor(className: string): string {
+    const classColors: Record<string, string> = {
+      'Death Knight': '#C41E3A',
+      'Demon Hunter': '#A330C9',
+      'Druid': '#FF7C0A',
+      'Evoker': '#33937F',
+      'Hunter': '#AAD372',
+      'Mage': '#3FC7EB',
+      'Monk': '#00FF98',
+      'Paladin': '#F48CBA',
+      'Priest': '#FFFFFF',
+      'Rogue': '#FFF468',
+      'Shaman': '#0070DD',
+      'Warlock': '#8788EE',
+      'Warrior': '#C69B6D'
+    };
+    return classColors[className] || '#FFFFFF';
+  }
 </script>
 
 {#if error}
@@ -161,18 +180,6 @@ const getBattleNetToken = async() => await getFromStore('access_token');
   </button>
 </div>
 {/if}
-
-<dialog id="wowDirModal" class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg">WoW Directory Not Found</h3>
-    <p class="py-4">Please set your World of Warcraft installation directory.</p>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn">Close</button>
-      </form>
-    </div>
-  </div>
-</dialog>
 
 <div class="flex flex-col justify-between h-[100vh] p-24 max-w-full">
   <div class="w-full h-30 2xl:h-40">
@@ -219,12 +226,10 @@ const getBattleNetToken = async() => await getFromStore('access_token');
               alt={newsPosts[index].title}
               class="w-64 h-[40%] object-cover cursor-pointer"
             />
-
             <div class="h-[60%] bg-[#292a33]/80 max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
               <h2 class="2xl:text-lg font-semibold mb-2">
                 {newsPosts[index].title}
               </h2>
-
               <p class="text-sm leading-relaxed">
                 {newsPosts[index].subtitle}
               </p>
@@ -237,11 +242,9 @@ const getBattleNetToken = async() => await getFromStore('access_token');
               <div class="w-full h-full bg-[#292a33] skeleton animate-pulse">
               </div>
             </div>
-
             <div class="h-[60%] bg-[#292a33] max-w-64 text-white p-3 text-sm" style="font-family: frizQuadrata;">
               <div class="2xl:text-lg font-semibold mb-2 bg-gray-500 h-6 skeleton animate-pulse">
               </div>
-
               <p class="text-sm leading-relaxed bg-gray-500 h-3 w-full skeleton animate-pulse">
               </p>
               <p class="text-sm leading-relaxed bg-gray-500 h-3 w-full mt-2 skeleton animate-pulse">
@@ -283,7 +286,7 @@ const getBattleNetToken = async() => await getFromStore('access_token');
         <div class="px-3 py-2 border-b border-gray-700 hover:bg-[#2a2a3a] cursor-pointer">
           <div class="flex justify-between items-center">
             <div>
-              <span class="text-white font-medium text-sm">{character.name}</span>
+              <span style="color: {getClassColor(character.playable_class.name.en_US)}" class="font-medium text-sm">{character.name}</span>
               <span class="text-gray-400 text-xs ml-2">
                 {character.level} {character.playable_class?.name?.en_US || ''}
               </span>
@@ -309,32 +312,21 @@ const getBattleNetToken = async() => await getFromStore('access_token');
             selected = dropdownItems.find(i => i.label === label) || null;
           }} 
         />
-      {#if ptrNotification}
+      {#if versionNotification}
       <div class="relative group">
-        <InfoIcon size="16" class="text-red-500 hover:text-red-400 transition-colors" />
+        <InfoIcon size="16" class="{versionNotification.notificationType == "Error" ? "text-red-500 hover:text-red-400" : "text-blue-400 hover:text-blue-300"} transition-colors" />
         <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
-          PTR will not launch as a result of Blizzard's limitations with launcher codes.
-          <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
-        </div>
-      </div>
-      {/if}
-      {#if classicNotification}
-      <div class="relative group">
-        <InfoIcon size="16" class="text-blue-400 hover:text-blue-300 transition-colors" />
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
-          This will only launch Mists of Pandaria Classic as a result of Blizzard's limitations with launcher codes.
+          {versionNotification.message}
           <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
         </div>
       </div>
       {/if}
     </div>
-   
-
     <div class="flex flex-row items-end justify-between w-full mt-2">
       <div class="flex flex-row items-end gap-x-4">
         <button 
           onclick={launch_wow} 
-          disabled={ptrNotification || isLaunching || isLoading || !wowDir} 
+          disabled={versionNotification?.notificationType == "Error" || isLaunching || isLoading || !wowDir} 
           class="disabled:bg-gray-600 disabled:text-gray-400 relative w-64 px-12 py-6 text-4xl font-bold disabled:cursor-not-allowed enabled:cursor-pointer enabled:text-white rounded-lg enabled:bg-gradient-to-b from-[#4aa1f3] to-[#0077c9] shadow-lg shadow-black/50 transform transition duration-150 ease-in-out enabled:hover:scale-105 enabled:hover:shadow-xl enabled:active:scale-95 active:shadow-md before:absolute before:inset-0 before:rounded-lg enabled:before:bg-white enabled:before:opacity-0 enabled:before:pointer-events-none enabled:hover:before:opacity-10"
           aria-label={buttonText}
         >
