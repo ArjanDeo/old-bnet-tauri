@@ -3,7 +3,7 @@
   import { CircleX, Settings, SquareCheckBig, InfoIcon } from 'lucide-svelte';
   import GameLogoPanel from "../../../components/GameLogoPanel.svelte";
   import Dropdown from "../../../components/dropdown.svelte";
-  import { GamePrefix, WoWExpansionPrefix, getLayoutConfig, getWoWPlaytime, type GameTheme, type WowNewsPost } from "../../../data";
+  import { GamePrefix, WoWExpansionPrefix, getLayoutConfig, getWoWPlaytime, type GameTheme, type WowNewsPost, type WowProfileData } from "../../../data";
   import { GameThemeStore, getFromStore } from "../../../stores";
   import { onMount, onDestroy } from "svelte";
     import { dev } from "$app/environment";
@@ -23,6 +23,7 @@
   let isLoading = $state(true);
   let newsPosts: Array<WowNewsPost> | undefined = $state();
   let index = $state(0);
+  let wowProfile = <WowProfileData> $state();
   const INTERVAL = 5000; // 5 seconds
 
   // Rotate automatically
@@ -105,6 +106,8 @@
     if (newsPostsRes.ok) {
       newsPosts = await newsPostsRes.json();
     }
+    wowProfile = await invoke("fetch_wow_profile", {authToken : await getBattleNetToken()})
+    console.log(wowProfile)
   });
 
   onDestroy(() => {
@@ -122,6 +125,32 @@
   const buttonText = $derived(isLaunching ? 'Launching...' : 'PLAY');
   const currentVersion = $derived((selected?.key && wowVersions[selected.key]) ? wowVersions[selected.key] : 'Loading...');
   const playTimeHours = $derived(playTime > 0 ? parseFloat((playTime / 3600).toFixed(2)) : 0);
+  
+const getBattleNetToken = async() => await getFromStore('access_token');
+
+ let selectedRealm = $state('all');
+  let selectedAccount = $state(0);
+  let sortBy = $state('name'); // name, level
+
+  let accounts = $derived(wowProfile?.wow_accounts || []);
+  let characters = $derived(accounts[selectedAccount]?.characters || []);
+  let realms = $derived([...new Set(characters.map(c => c.realm?.name?.en_US).filter(Boolean))].sort());
+  
+  let filteredCharacters = $derived.by(() => {
+    let filtered = characters.filter(char => {
+      if (selectedRealm !== 'all' && char.realm?.name?.en_US !== selectedRealm) {
+        return false;
+      }
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'level') {
+        return b.level - a.level; // descending
+      }
+      return a.name.localeCompare(b.name); // alpha
+    });
+  });
 </script>
 
 {#if error}
@@ -145,7 +174,7 @@
   </div>
 </dialog>
 
-<div class="flex flex-col justify-between h-[100vh] p-24">
+<div class="flex flex-col justify-between h-[100vh] p-24 max-w-full">
   <div class="w-full h-30 2xl:h-40">
     {#if wowTheme}
     <GameLogoPanel 
@@ -161,7 +190,7 @@
   
   <div class="flex flex-row gap-4 mt-20 2xl:mt-24 h-60 2xl:h-72 3xl:h-80">
     <!-- Main Video Section -->
-    <div class="relative flex-1 rounded-xl overflow-hidden w-md 2xl:w-lg shadow-lg">
+    <div class="relative rounded-xl overflow-hidden w-md 2xl:w-xl shadow-lg">
       {#if wowTheme}
       <iframe 
         class="w-full h-full" 
@@ -176,14 +205,14 @@
     </div>
     
     <!-- Right Column: Ads / Info -->
-    <div class="flex flex-row gap-4 w-80 max-h-full">
+    <div class="flex flex-row gap-4 max-h-full">
       {#if newsPosts && newsPosts.length > 0}
         {#key index}
           <a 
             href={newsPosts[index].link}
             target="_blank"
             rel="noopener noreferrer"
-            class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block"
+            class="relative rounded-xl shadow-lg h-full overflow-hidden hover:shadow-xl transition-shadow block w-full"
           >
             <img 
               src={newsPosts[index].image}
@@ -223,6 +252,49 @@
           </div>
       {/if}
     </div>
+    <div class="flex-1 bg-[#1f1f2a] rounded-l-xl z-0 overflow-hidden flex flex-col " >
+  {#if wowProfile}
+    <div class="p-3 border-b border-gray-700 space-y-2">
+      <div class="flex gap-2">
+        {#if accounts.length > 1}
+          <select bind:value={selectedAccount} class="flex-1 px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
+            {#each accounts as account, i}
+              <option value={i}>Account {i + 1}</option>
+            {/each}
+          </select>
+        {/if}
+        
+        <select bind:value={selectedRealm} class="flex-1 px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
+          <option value="all">All Realms</option>
+          {#each realms as realm}
+            <option value={realm}>{realm}</option>
+          {/each}
+        </select>
+        
+        <select bind:value={sortBy} class="px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
+          <option value="name">A-Z</option>
+          <option value="level">Level</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto" style="font-family: frizQuadrata;">
+      {#each filteredCharacters as character (character.id || character.name)}
+        <div class="px-3 py-2 border-b border-gray-700 hover:bg-[#2a2a3a] cursor-pointer">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-white font-medium text-sm">{character.name}</span>
+              <span class="text-gray-400 text-xs ml-2">
+                {character.level} {character.playable_class?.name?.en_US || ''}
+              </span>
+            </div>
+            <span class="text-gray-500 text-xs">{character.realm?.name?.en_US || ''}</span>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>
   </div>
   <div class="flex flex-col items-start mb-8 mt-2 w-full">
     <div class="flex items-center gap-2 mb-2">

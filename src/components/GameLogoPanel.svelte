@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Settings } from "lucide-svelte";
   import { GamePrefix, getLayoutConfig, type GameTheme } from "../data";
+    import { dev } from "$app/environment";
   
   let { theme, options = [], game }: { 
     theme: GameTheme;
@@ -24,7 +25,7 @@
   <!-- Logo container -->
   <div class="flex items-center justify-center {sizeClasses[config?.logoSize!]}">
     <img 
-      src="../images/{game}/{game}_{theme.activePrefix}_logo.webp" 
+      src="{dev ? 'https://localhost:7176/' : 'https://twistingnetherapi.furyshiftz.com/'}static/images/{game}/{game}_{theme.activePrefix}_logo.webp" 
       alt="{game} {theme.activePrefix} logo" 
       class="max-h-full w-auto object-contain"
     />

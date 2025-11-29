@@ -1,17 +1,18 @@
+use reqwest::header::CONTENT_TYPE;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::fs;
+use reqwest::header::{AUTHORIZATION};
+use tauri_plugin_store::StoreBuilder;
 use walkdir::WalkDir;
 use winreg::enums::*;
 use winreg::RegKey;
-use tauri_plugin_store::StoreBuilder;
-use std::fs::File;
-use std::io::prelude::*;
-use serde::{Deserialize, Serialize};
-
-
-#[derive(Debug)]
+use tauri_plugin_store::StoreExt;#[derive(Debug)]
 pub struct WowBuild {
     pub product: String,
     pub version: String,
@@ -42,6 +43,118 @@ pub struct Installed {
     #[serde(rename = "product_id")]
     pub product_id: String,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct UserInfo {
+    // Match the JSON structure from Battle.net
+    id: Option<u64>,
+    battletag: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Root {
+    pub _links: Links,
+    pub id: u64,
+    pub wow_accounts: Vec<WowAccount>,
+    pub collections: Collection,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Links {
+     #[serde(rename = "self")]
+    pub self_: Href,
+    pub user: Href,
+    pub profile: Href,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Href {
+    pub href: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WowAccount {
+    pub id: u64,
+    pub characters: Vec<CharacterWrapper>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CharacterWrapper {
+    pub character: Href,
+    pub protected_character: Option<Href>,
+    pub name: String,
+    pub id: u64,
+    pub realm: Realm,
+    pub playable_class: Playable,
+    pub playable_race: Playable,
+    pub gender: TypeName,
+    pub faction: TypeName,
+    pub level: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Realm {
+    pub key: Href,
+    pub name: LocaleName,
+    pub id: u64,
+    pub slug: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Playable {
+    pub key: Href,
+    pub name: LocaleName,
+    pub id: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeName {
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub name: LocaleName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocaleName {
+    pub en_US: String,
+    pub es_MX: Option<String>,
+    pub pt_BR: Option<String>,
+    pub de_DE: Option<String>,
+    pub en_GB: Option<String>,
+    pub es_ES: Option<String>,
+    pub fr_FR: Option<String>,
+    pub it_IT: Option<String>,
+    pub ru_RU: Option<String>,
+    pub ko_KR: Option<String>,
+    pub zh_TW: Option<String>,
+    pub zh_CN: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Collection {
+    pub href: String,
+}
+
+#[tauri::command]
+async fn fetch_wow_profile(auth_token: String) -> Result<Root, String> {
+    let client = reqwest::Client::new();
+    let url = "https://us.api.blizzard.com/profile/user/wow?namespace=profile-us"; // hardcoded to US right now but will change to be dynamic somehow in the future
+
+    let resp = client
+        .get(url)
+        .header(AUTHORIZATION, format!("Bearer {}", auth_token))
+        .header(CONTENT_TYPE, "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("HTTP error: {}", resp.status()));
+    }
+    let data: Root = resp.json()
+        .await
+        .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+    Ok(data)
+}
 
 #[tauri::command]
 fn get_wow_playtime() -> Result<u64, String> {
@@ -59,13 +172,22 @@ fn get_wow_playtime() -> Result<u64, String> {
 
     let mut total_playtime: u64 = 0;
 
-    for entry in WalkDir::new(&account_path).into_iter().filter_map(Result::ok) {
+    for entry in WalkDir::new(&account_path)
+        .into_iter()
+        .filter_map(Result::ok)
+    {
         let path = entry.path();
 
         // Looking specifically for SavedVariables/TotalPlayed.lua
         if path.is_file()
-            && path.file_name().map(|f| f == "TotalPlayed.lua").unwrap_or(false)
-            && path.parent().map(|p| p.ends_with("SavedVariables")).unwrap_or(false)
+            && path
+                .file_name()
+                .map(|f| f == "TotalPlayed.lua")
+                .unwrap_or(false)
+            && path
+                .parent()
+                .map(|p| p.ends_with("SavedVariables"))
+                .unwrap_or(false)
         {
             if let Ok(contents) = fs::read_to_string(path) {
                 for line in contents.lines() {
@@ -82,6 +204,49 @@ fn get_wow_playtime() -> Result<u64, String> {
     Ok(total_playtime)
 }
 
+#[tauri::command]
+async fn get_user_info(
+    app: tauri::AppHandle,
+    access_token: String,
+) -> Result<UserInfo, String> {
+    // Try to get from store first
+    let store = app.store("store.json")
+        .map_err(|e| format!("Failed to access store: {}", e))?;
+    
+    // Check if we have cached user info
+    if let Some(cached_value) = store.get("user_info") {
+        if let Ok(user_info) = serde_json::from_value::<UserInfo>(cached_value.clone()) {
+            println!("Retrieved user info from cache");
+            return Ok(user_info);
+        }
+    }
+    
+    // If not in cache, fetch from API
+    println!("Fetching user info from Battle.net API");
+    let client = reqwest::Client::new();
+    let res = client
+        .get("https://oauth.battle.net/oauth/userinfo")
+        .header(AUTHORIZATION, format!("Bearer {}", access_token))
+        .send()
+        .await
+        .map_err(|e| format!("Request error: {}", e))?;
+    
+    if res.status().is_success() {
+        let user_info: UserInfo = res
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+        
+        // Save to store
+        store.set("user_info", json!(user_info.clone()));
+        store.save().map_err(|e| format!("Failed to save store: {}", e))?;
+        
+        println!("Saved user info to cache");
+        Ok(user_info)
+    } else {
+        Err(format!("Request failed with status: {}", res.status()))
+    }
+}
 pub fn parse_build_info<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<WowBuild>> {
     let content = fs::read_to_string(path)?;
     let mut lines = content.lines();
@@ -89,18 +254,29 @@ pub fn parse_build_info<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<WowBuild
     let header = lines.next().unwrap_or_default();
     let headers: Vec<&str> = header.split('|').collect();
 
-    let version_idx = headers.iter().position(|&h| h.contains("Version")).unwrap_or(0);
-    let product_idx = headers.iter().position(|&h| h.contains("Product")).unwrap_or(0);
-    let branch_idx  = headers.iter().position(|&h| h.contains("Branch")).unwrap_or(0);
+    let version_idx = headers
+        .iter()
+        .position(|&h| h.contains("Version"))
+        .unwrap_or(0);
+    let product_idx = headers
+        .iter()
+        .position(|&h| h.contains("Product"))
+        .unwrap_or(0);
+    let branch_idx = headers
+        .iter()
+        .position(|&h| h.contains("Branch"))
+        .unwrap_or(0);
 
     let mut builds = Vec::new();
 
     for line in lines {
         let parts: Vec<&str> = line.split('|').collect();
-        if parts.len() <= version_idx { continue; }
+        if parts.len() <= version_idx {
+            continue;
+        }
 
         builds.push(WowBuild {
-            branch:  parts.get(branch_idx).unwrap_or(&"").to_string(),
+            branch: parts.get(branch_idx).unwrap_or(&"").to_string(),
             version: parts.get(version_idx).unwrap_or(&"").to_string(),
             product: parts.get(product_idx).unwrap_or(&"").to_string(),
         });
@@ -132,10 +308,10 @@ fn sync_game_build(app_handle: tauri::AppHandle, game: String) -> Result<String,
     let builds = parse_build_info(&build_info_path).map_err(|e| e.to_string())?;
 
     let mut version_map = serde_json::Map::new();
-    
+
     // Get product prefixes based on game
     let prefixes = get_game_product_prefixes(&game);
-    
+
     for b in builds {
         // Check if this build matches any of the game's product prefixes
         if prefixes.iter().any(|&prefix| b.product == prefix) {
@@ -161,7 +337,14 @@ fn sync_game_build(app_handle: tauri::AppHandle, game: String) -> Result<String,
 
 fn get_game_product_prefixes(game: &str) -> Vec<&str> {
     match game.to_lowercase().as_str() {
-        "wow" => vec!["wow", "wowxptr", "wowt", "wow_beta", "wow_classic", "wow_classic_era"],
+        "wow" => vec![
+            "wow",
+            "wowxptr",
+            "wowt",
+            "wow_beta",
+            "wow_classic",
+            "wow_classic_era",
+        ],
         "ow" => vec!["pro"],
         "sc2" => vec!["s2"],
         _ => vec![],
@@ -185,7 +368,6 @@ fn get_blizzard_game_install_path(game: String) -> Option<String> {
         }
     }
 
-
     // If code reaches here, WoW wasn't found in the windows registry (or its a different game), so look in Battle.Net's ProgramData
 
     let path = Path::new("C:\\ProgramData\\Battle.net\\Agent\\aggregate.json");
@@ -202,10 +384,13 @@ fn get_blizzard_game_install_path(game: String) -> Option<String> {
         Ok(_) => print!("{} contains:\n{}", display, aggregate_file_string),
     }
 
-    let deserialized_aggregate: BattleNetAggregate = serde_json::from_str(&aggregate_file_string).unwrap();
+    let deserialized_aggregate: BattleNetAggregate =
+        serde_json::from_str(&aggregate_file_string).unwrap();
 
     for installed_game in deserialized_aggregate.installed {
-        if &installed_game.product_id.to_lowercase() == &game.to_lowercase() || (&installed_game.product_id.to_lowercase() == "pro" && &game.to_lowercase() == "ow") {
+        if &installed_game.product_id.to_lowercase() == &game.to_lowercase()
+            || (&installed_game.product_id.to_lowercase() == "pro" && &game.to_lowercase() == "ow")
+        {
             let mut pb = PathBuf::from(installed_game.icon_path); // icon_path is a path to the games launcher (e.g. "X:/Games/World of Warcraft/World of Warcraft Launcher.exe")
             pb.pop();
             pb.push("_retail_");
@@ -222,46 +407,60 @@ fn launch_game(folder_path: &str, game: &str, version: Option<&str>) -> Result<S
     let root_path = Path::new(folder_path)
         .parent() // go up one level from _retail_
         .ok_or("Cannot determine root WoW folder")?;
-    
+
     let exe_path = if game == "wow" {
         root_path.join("World of Warcraft Launcher.exe")
     } else {
         root_path.join("Overwatch Launcher.exe")
     };
-    
+
     if !exe_path.exists() {
-        return Err(format!(
-            "Launcher not found at: {}",
-            exe_path.display()
-        ));
+        return Err(format!("Launcher not found at: {}", exe_path.display()));
     }
-    
+
     // Launch
     let launch_arg = if game == "wow" {
         match version {
             Some("retail") => "--exec=launch WoW",
             Some("wow_classic_era") => "--exec=launch WoWC",
             Some("wow_classic") => "--exec=launch WoWC",
-            _ => "--exec=launch WoW" // default to retail
+            _ => "--exec=launch WoW", // default to retail
         }
     } else {
         "--exec=launch Pro"
     };
-    
+
     Command::new(&exe_path)
         .args([launch_arg])
         .spawn()
         .map_err(|e| e.to_string())?;
-    
+
     Ok("Game launch command executed.".into())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {}))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![locate_game, launch_game, sync_game_build, get_wow_playtime])
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            #[cfg(any(windows, target_os = "linux"))]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                app.deep_link().register_all()?;
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            locate_game,
+            launch_game,
+            sync_game_build,
+            get_wow_playtime,
+            get_user_info,
+            fetch_wow_profile
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

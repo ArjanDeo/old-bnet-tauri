@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { load } from '@tauri-apps/plugin-store';
+import { getFromStore } from './stores';
 
 export enum GamePrefix {
   WoW = "wow",
@@ -276,4 +277,142 @@ export interface OverwatchNewsPost {
   title: string,
   image: string,
   link: string
+}
+export interface TokenData {
+  access_token: string;
+  acquired_at: string;
+}
+export async function checkAuth() {
+  const accessToken = await getFromStore('access_token');
+  return !!accessToken;
+}
+export interface UserInfo {
+  id: number,
+  battletag: string
+}
+export type WowProfileData = {
+  _links: {
+    self: {
+      href: string
+    }
+    user: {
+      href: string
+    }
+    profile: {
+      href: string
+    }
+  }
+  id: number
+  wow_accounts: Array<{
+    id: number
+    characters: Array<{
+      character: {
+        href: string
+      }
+      protected_character: {
+        href: string
+      }
+      name: string
+      id: number
+      realm: {
+        key: {
+          href: string
+        }
+        name: {
+          en_US: string
+          es_MX: string
+          pt_BR: string
+          de_DE: string
+          en_GB: string
+          es_ES: string
+          fr_FR: string
+          it_IT: string
+          ru_RU: string
+          ko_KR: string
+          zh_TW: string
+          zh_CN: string
+        }
+        id: number
+        slug: string
+      }
+      playable_class: {
+        key: {
+          href: string
+        }
+        name: {
+          en_US: string
+          es_MX: string
+          pt_BR: string
+          de_DE: string
+          en_GB: string
+          es_ES: string
+          fr_FR: string
+          it_IT: string
+          ru_RU: string
+          ko_KR: string
+          zh_TW: string
+          zh_CN: string
+        }
+        id: number
+      }
+      playable_race: {
+        key: {
+          href: string
+        }
+        name: {
+          en_US: string
+          es_MX: string
+          pt_BR: string
+          de_DE: string
+          en_GB: string
+          es_ES: string
+          fr_FR: string
+          it_IT: string
+          ru_RU: string
+          ko_KR: string
+          zh_TW: string
+          zh_CN: string
+        }
+        id: number
+      }
+      gender: {
+        type: string
+        name: {
+          en_US: string
+          es_MX: string
+          pt_BR: string
+          de_DE: string
+          en_GB: string
+          es_ES: string
+          fr_FR: string
+          it_IT: string
+          ru_RU: string
+          ko_KR: string
+          zh_TW: string
+          zh_CN: string
+        }
+      }
+      faction: {
+        type: string
+        name: {
+          en_US: string
+          es_MX: string
+          pt_BR: string
+          de_DE: string
+          en_GB: string
+          es_ES: string
+          fr_FR: string
+          it_IT: string
+          ru_RU: string
+          ko_KR: string
+          zh_TW: string
+          zh_CN: string
+        }
+      }
+      level: number
+    }>
+  }>
+  collections: {
+    href: string
+  }
 }
