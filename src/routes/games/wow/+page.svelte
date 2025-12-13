@@ -1,10 +1,10 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
-  import { CircleX, Settings, SquareCheckBig, InfoIcon } from 'lucide-svelte';
+  import { CircleX, Settings, SquareCheckBig, InfoIcon, X } from 'lucide-svelte';
   import GameLogoPanel from "../../../components/GameLogoPanel.svelte";
   import Dropdown from "../../../components/dropdown.svelte";
   import { GamePrefix, getBattleNetToken, getLayoutConfig, getWoWPlaytime, type GameTheme, type VersionNotification, type WowNewsPost, type WowProfileData, } from "../../../data";
-  import { GameThemeStore, getFromStore } from "../../../stores";
+  import { GameThemeStore, getFromStore, setToStore } from "../../../stores";
   import { onMount, onDestroy } from "svelte";
   import { dev } from "$app/environment";
 
@@ -26,6 +26,8 @@
   let selectedRealm = $state('all');
   let selectedAccount = $state(0);
   let sortBy = $state('name'); // name, level
+  let showCharacterModal = $state(false);
+  let selectedCharacterUrl = $state('');
 
   const accounts = $derived(wowProfile?.wow_accounts || []);
   const characters = $derived(accounts[selectedAccount]?.characters || []);
@@ -72,12 +74,61 @@
     }
   }
 
+  function openCharacterModal(character: any) {
+    selectedCharacterUrl = `https://twistingnether.furyshiftz.com/character/us/${character.realm.name.en_US}/${character.name}`;
+    showCharacterModal = true;
+  }
+
+  function closeCharacterModal() {
+    showCharacterModal = false;
+    selectedCharacterUrl = '';
+  }
+
+  // Persist filter/sort preferences
+  async function persistPreferences() {
+    try {
+      await setToStore('wow-character-filter-realm', selectedRealm);
+      await setToStore('wow-character-sort', sortBy);
+      await setToStore('wow-character-account', selectedAccount);
+    } catch (err) {
+      console.error('Failed to persist preferences:', err);
+    }
+  }
+
+  $effect(() => {
+    if (selectedRealm !== undefined && !isLoading) {
+      persistPreferences();
+    }
+  });
+
+  $effect(() => {
+    if (sortBy !== undefined && !isLoading) {
+      persistPreferences();
+    }
+  });
+
+  $effect(() => {
+    if (selectedAccount !== undefined && !isLoading) {
+      persistPreferences();
+    }
+  });
+
   onMount(async () => {
     unsubscribe = GameThemeStore.subscribe((themes) => {
       wowTheme = themes.find(t => t.game === 'wow');
     });
 
     try {
+      // Load persisted preferences
+      const savedRealm = await getFromStore('wow-character-filter-realm');
+      if (savedRealm) selectedRealm = savedRealm as string;
+
+      const savedSort = await getFromStore('wow-character-sort');
+      if (savedSort) sortBy = savedSort as string;
+
+      const savedAccount = await getFromStore('wow-character-account');
+      if (savedAccount !== null && savedAccount !== undefined) selectedAccount = savedAccount as number;
+
       // Load WoW directory
       wowDir = await invoke("locate_game", {game: "wow"});
 
@@ -127,7 +178,8 @@
     if (newsPostsRes.ok) {
       newsPosts = await newsPostsRes.json();
     }
-    wowProfile = await invoke("fetch_wow_profile", {authToken : await getBattleNetToken()})
+    const token = await getBattleNetToken()
+    wowProfile = await invoke("fetch_wow_profile", {authToken : token})
   });
 
   onDestroy(() => {
@@ -152,6 +204,7 @@
         break;
     }
   });
+  
   function getClassColor(className: string): string {
     const classColors: Record<string, string> = {
       'Death Knight': '#C41E3A',
@@ -178,6 +231,34 @@
   <button class="cursor-pointer hover:opacity-70" onclick={() => error = ""}>
     <CircleX size="20" />
   </button>
+</div>
+{/if}
+
+<!-- Character Modal -->
+{#if showCharacterModal}
+<div 
+  class="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4"
+  onclick={closeCharacterModal}
+>
+  <div 
+    class="relative w-[95vw] mt-14 h-full max-h-[85vh] bg-[#1f1f2a] rounded-lg shadow-2xl overflow-hidden"
+    onclick={(e) => e.stopPropagation()}
+  >
+    <button 
+      onclick={closeCharacterModal}
+      class="absolute top-4 right-4 z-10 p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+      aria-label="Close"
+    >
+      <X size="24" class="text-white" />
+    </button>
+    
+    <iframe 
+      src={selectedCharacterUrl}
+      class="w-full h-full"
+      title="Character Profile"
+      frameborder="0"
+    ></iframe>
+  </div>
 </div>
 {/if}
 
@@ -257,24 +338,24 @@
     </div>
     <div class="flex-1 bg-[#1f1f2a] rounded-l-xl z-0 overflow-hidden flex flex-col " >
   {#if wowProfile}
-    <div class="p-3 border-b border-gray-700 space-y-2">
+    <div class="p-3 border-b border-gray-700 space-y-2 ">
       <div class="flex gap-2">
         {#if accounts.length > 1}
-          <select bind:value={selectedAccount} class="flex-1 px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
+          <select bind:value={selectedAccount} onchange={async () => await persistPreferences()} class="flex-1 px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
             {#each accounts as account, i}
               <option value={i}>Account {i + 1}</option>
             {/each}
           </select>
         {/if}
         
-        <select bind:value={selectedRealm} class="flex-1 px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
+        <select bind:value={selectedRealm} onchange={async () => await persistPreferences()} class="flex-1 px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
           <option value="all">All Realms</option>
           {#each realms as realm}
             <option value={realm}>{realm}</option>
           {/each}
         </select>
         
-        <select bind:value={sortBy} class="px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
+        <select bind:value={sortBy} onchange={async () => await persistPreferences()} class="px-2 py-1 bg-[#2a2a3a] text-white text-sm rounded border border-gray-600">
           <option value="name">A-Z</option>
           <option value="level">Level</option>
         </select>
@@ -283,7 +364,7 @@
     
     <div class="flex-1 overflow-y-auto" style="font-family: frizQuadrata;">
       {#each filteredCharacters as character (character.id || character.name)}
-        <div class="px-3 py-2 border-b border-gray-700 hover:bg-[#2a2a3a] cursor-pointer">
+        <div class="px-3 py-2 border-b border-gray-700 hover:bg-[#2a2a3a] cursor-pointer" onclick={() => openCharacterModal(character)}>
           <div class="flex justify-between items-center">
             <div>
               <span style="color: {getClassColor(character.playable_class.name.en_US)}" class="font-medium text-sm">{character.name}</span>

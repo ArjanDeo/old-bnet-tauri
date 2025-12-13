@@ -85,7 +85,7 @@
     </button>
 </section>
 
-<nav class="relative z-50 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 p-4 flex flex-row gap-x-10 flex-none">
+<nav class="relative z-20 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 p-4 flex flex-row gap-x-10 flex-none">
     <button onclick={() => goto("/settings")} class="flex flex-row items-center cursor-pointer hover:opacity-80 transition-opacity">
         <img src="{dev ? 'https://localhost:7176/' : 'https://twistingnetherapi.furyshiftz.com/'}static/images/battle_net_logo.webp" alt="battle.net logo" class="w-14 h-14 my-auto mr-6" />
         <ChevronDown />

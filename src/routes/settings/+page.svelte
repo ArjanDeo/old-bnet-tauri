@@ -2,7 +2,7 @@
   import { dev } from '$app/environment';
   import { InfoIcon } from 'lucide-svelte';
   import Dropdown from '../../components/dropdown.svelte';
-  import { WoWExpansionLabels, WoWExpansionPrefix, type GameTheme } from '../../data';
+  import { generateState, WoWExpansionLabels, WoWExpansionPrefix, type GameTheme } from '../../data';
   import { GameThemeStore, getFromStore, setToStore } from '../../stores';
   import { onMount, onDestroy } from 'svelte';
     import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -80,12 +80,9 @@ async function checkAuth() {
   });
 
   // For OAuth
-  const generateState = () =>
-  [...crypto.getRandomValues(new Uint8Array(16))]
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
 
-  const startBnetOAuth = async () => {
+
+   const startBnetOAuth = async () => {
     const authUrl =
     "https://oauth.battle.net/authorize" +
     "?client_id=c3a1ab081a1b4316ac819b4b7416d1e9" +
@@ -103,9 +100,7 @@ async function checkAuth() {
 
   return win;
   }
-  const resetThemeCache = async () => {
-    
-  }
+
 </script>
 
 <div class="w-full p-4">
@@ -163,7 +158,7 @@ async function checkAuth() {
     </div>
     <button 
       onclick={startBnetOAuth} 
-      class="bg-blue-700 hover:bg-blue-800 transition-colors ease-in cursor-pointer p-4 rounded-xl flex flex-row gap-x-2"
+      class="bg-blue-700 hover:bg-blue-800 transition-colors ease-in cursor-pointer p-3 mt-1 rounded-xl flex flex-row gap-x-2"
       disabled={isAuthenticated}
     >
       <img src="{dev ? 'https://localhost:7176/' : 'https://twistingnetherapi.furyshiftz.com/'}static/images/battle_net_logo.webp" alt="battle.net logo" class="w-6 h-6" />
@@ -172,20 +167,6 @@ async function checkAuth() {
       {:else}
         Connect to Battle.Net account
       {/if}
-    </button>
-        <div class="relative group  mt-4">
-      <InfoIcon size="16" class="text-blue-400 hover:text-blue-300 transition-colors" />
-      <div class="absolute  bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-lg">
-        Resetting theme cache can help fix UI issues.
-        <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
-      </div>
-    </div>
-    <button 
-      onclick={resetThemeCache} 
-      class="bg-blue-700 hover:bg-blue-800 transition-colors ease-in cursor-pointer p-2 rounded-md mt-0.5"
-      disabled={isAuthenticated}
-    >
-      Reset Theme Cache
     </button>
   </section>
 </div>

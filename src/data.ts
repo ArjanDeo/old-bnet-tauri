@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { load } from '@tauri-apps/plugin-store';
 import { getFromStore } from './stores';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { dev } from '$app/environment';
 
 export enum GamePrefix {
   WoW = "wow",
@@ -416,7 +418,47 @@ export type WowProfileData = {
     href: string
   }
 }
-export const getBattleNetToken = async() => await getFromStore('access_token');
+  export const generateState = () =>
+  [...crypto.getRandomValues(new Uint8Array(16))]
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+export const getBattleNetToken = async () => {
+  const token_acquired = await getFromStore('acquired_at');
+  const date = new Date(token_acquired);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const hasBeen24Hours = diffMs >= 24 * 60 * 60 * 1000;
+
+  if (hasBeen24Hours) {
+    console.log('BattleNet Token Expired, Refreshing...');
+    
+    const authUrl =
+      "https://oauth.battle.net/authorize" +
+      "?client_id=c3a1ab081a1b4316ac819b4b7416d1e9" +
+      `&redirect_uri=${dev ? 'https://localhost:7176/old-bnet-tauri-callback' : 'https://twistingnetherapi.furyshiftz.com/old-bnet-tauri-callback'}` +
+      "&response_type=code" +
+      "&scope=wow.profile openid" +
+      `&state=${generateState()}`;
+
+    new WebviewWindow("bnet-oauth", {
+      url: authUrl,
+      title: "Battle.net Connection",
+      width: 500,
+      height: 700,
+      resizable: false
+    });
+
+    console.error('Battle.Net token is expired. Please acquire a new one.');
+    
+    // Returning null or old token because you cannot get the new token yet
+    return null;
+  } else {
+    // Token is still valid, return it
+    const token = await getFromStore('access_token');
+    return token;
+  }
+};
+
 export type VersionNotification =  {
   notificationType: "Warning" | "Error",
   message: string
