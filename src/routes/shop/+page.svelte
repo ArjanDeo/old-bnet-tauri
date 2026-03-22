@@ -12,7 +12,6 @@
             console.log('Shop page mounted');
             const mainWindow = getCurrentWindow();
             const size = await mainWindow.innerSize();
-            
             shopWebview = new Webview(mainWindow, 'bnet-shop-embedded', {
                 url: 'https://us.shop.battle.net/en-us/',
                 width: size.width,

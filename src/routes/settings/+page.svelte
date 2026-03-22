@@ -2,11 +2,11 @@
   import { dev } from '$app/environment';
   import { InfoIcon } from 'lucide-svelte';
   import Dropdown from '../../components/dropdown.svelte';
-  import { generateState, WoWExpansionLabels, WoWExpansionPrefix, type GameTheme } from '../../data';
+  import { generateState, WoWExpansionLabels, WoWExpansionPrefix, WoWTheme, type GameTheme } from '../../data';
   import { GameThemeStore, getFromStore, setToStore } from '../../stores';
   import { onMount, onDestroy } from 'svelte';
     import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-  let selectedExpansion: WoWExpansionPrefix = WoWExpansionPrefix.Midnight;
+  let selectedExpansion: WoWExpansionPrefix = $state(WoWExpansionPrefix.Midnight);
   let playMusic = $state(false);
   let trackWoWPlaytime = $state(false);
   let isLoading = $state(true);
@@ -25,18 +25,16 @@ async function checkAuth() {
     }
   });
   
-  function selectStyle(xpac: string) {
+  async function selectStyle(xpac: string) {
     if (!wowTheme) return;
     
     const xpacInternalValue = WoWExpansionLabels[xpac];
-    const index = Object.values(WoWExpansionPrefix).indexOf(xpacInternalValue);
+    // const index = Object.values(WoWExpansionPrefix).indexOf(xpacInternalValue);
     
-    GameThemeStore.update(themes =>
-      themes.map(t =>
-        t.game === 'wow' ? { ...t, activePrefix: xpacInternalValue, activeIndex: index } : t
-      )
-    );
-    
+    WoWTheme.activePrefix = xpacInternalValue
+
+    await setToStore('game-theme', WoWTheme)
+
     selectedExpansion = xpacInternalValue;
   }
   
@@ -47,7 +45,16 @@ async function checkAuth() {
         getFromStore('settings-playMusic'),
         getFromStore('settings-trackWoWPlaytime')
       ]);
-      
+    const theme: GameTheme = await getFromStore('game-theme');
+    const enumValue = theme.activePrefix;
+
+    const enumKey = Object.keys(WoWExpansionPrefix).find(
+      key => WoWExpansionPrefix[key as keyof typeof WoWExpansionPrefix] === enumValue
+    );
+
+    if (enumKey) {
+      selectedExpansion = WoWExpansionPrefix[enumKey as keyof typeof WoWExpansionPrefix];
+    }
       if (storedPlayMusic !== null) playMusic = storedPlayMusic;
       if (storedTrackPlaytime !== null) trackWoWPlaytime = storedTrackPlaytime;
     } catch (error) {

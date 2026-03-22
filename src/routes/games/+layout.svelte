@@ -28,6 +28,13 @@ import { getCurrentWindow  } from "@tauri-apps/api/window";
     $GameThemeStore.find((t) => t.game === selectedGame)
   );
 
+  onMount(async () => {
+    currentTheme = await getFromStore('game-theme')
+    playMusic = (await getFromStore("settings-playMusic")) as boolean;
+    if (playMusic && selectedGame && currentTheme) {
+      playGameTheme();
+    }
+  });
   // Update selected game reactively based on route
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -65,12 +72,6 @@ import { getCurrentWindow  } from "@tauri-apps/api/window";
   };
   });
 
-  onMount(async () => {
-    playMusic = (await getFromStore("settings-playMusic")) as boolean;
-    if (playMusic && selectedGame && currentTheme) {
-      playGameTheme();
-    }
-  });
 
   onDestroy(() => {
     if (audio instanceof Audio) {

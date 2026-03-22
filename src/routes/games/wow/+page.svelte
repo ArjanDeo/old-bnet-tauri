@@ -114,9 +114,7 @@
   });
 
   onMount(async () => {
-    unsubscribe = GameThemeStore.subscribe((themes) => {
-      wowTheme = themes.find(t => t.game === 'wow');
-    });
+   wowTheme = await getFromStore('game-theme');
 
     try {
       // Load persisted preferences
@@ -184,7 +182,6 @@
 
   onDestroy(() => {
     clearInterval(interval);
-    unsubscribe?.();
   });
 
   $effect(() => {
@@ -262,7 +259,7 @@
 </div>
 {/if}
 
-<div class="flex flex-col justify-between h-[100vh] p-24 max-w-full">
+<div class="flex flex-col justify-between h-[100vh] p-24 max-w-fit">
   <div class="w-full h-30 2xl:h-40">
     {#if wowTheme}
     <GameLogoPanel 
