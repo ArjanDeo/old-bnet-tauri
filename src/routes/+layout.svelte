@@ -9,6 +9,7 @@
     import { page } from "$app/state";
     import { getFromStore, setToStore } from "../stores";
     import { getCurrentWindow } from "@tauri-apps/api/window";
+    import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
     import { dev } from "$app/environment";
     import { checkAuth, type UserInfo } from "../data";
     import { invoke } from "@tauri-apps/api/core";
@@ -36,6 +37,15 @@
     await setToStore('acquired_at', acquiredAt);
     console.log('Token data saved to store!');
 }
+
+    async function refreshAuthState() {
+        authenticated = await checkAuth();
+        if (authenticated) {
+            const token = await getFromStore('access_token');
+            userInfo = await invoke('get_user_info', { accessToken: token }) as UserInfo;
+        }
+    }
+
     onMount(async () => {
     // If app was started via deep link
     const startUrls = await getCurrent();
@@ -53,21 +63,19 @@
 
             if (accessToken && acquiredAt) {
                 await saveTokenData(accessToken, acquiredAt);
+                await refreshAuthState();
             } else {
                 console.warn('Missing query parameters in deep link');
             }
         } catch (err) {
             console.error('Invalid URL:', err);
         }
-        window.location.reload();
+
+        const popup = await WebviewWindow.getByLabel('bnet-oauth');
+        await popup?.close();
     });
 
-    authenticated = await checkAuth();
-    if (authenticated) {
-    const token  = await getFromStore('access_token');
-    userInfo =  await invoke('get_user_info', {accessToken: token}) as UserInfo;
-    }
-
+    await refreshAuthState();
 });
 
 
