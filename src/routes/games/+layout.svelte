@@ -10,9 +10,29 @@
 import { getCurrentWindow  } from "@tauri-apps/api/window";
   let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-  let selectedGame = $state<GamePrefix | undefined>();
-  let playMusic = $state<boolean>(false);
-  let audio: HTMLAudioElement | null = $state(null);
+let selectedGame = $state<GamePrefix | undefined>();
+let playMusic = $state<boolean>(false);
+let audio: HTMLAudioElement | null = $state(null);
+
+// The real source of truth for the active prefix, written by the settings page
+let persistedTheme = $state<GameTheme | undefined>();
+
+let currentTheme = $derived.by(() => {
+  const base = $GameThemeStore.find((t) => t.game === selectedGame);
+  if (!base) return undefined;
+  if (persistedTheme && persistedTheme.game === selectedGame) {
+    return { ...base, activePrefix: persistedTheme.activePrefix };
+  }
+  return base;
+});
+
+onMount(async () => {
+  persistedTheme = await getFromStore('game-theme');
+  playMusic = (await getFromStore("settings-playMusic")) as boolean;
+  if (playMusic && selectedGame && currentTheme) {
+    playGameTheme();
+  }
+});
 
   const pathToGame: Record<string, GamePrefix> = {
     "/games/wow": GamePrefix.WoW,
@@ -23,10 +43,6 @@ import { getCurrentWindow  } from "@tauri-apps/api/window";
     "/games/sc2": GamePrefix.SC2,
   };
 
-  // Derived theme from store
-  let currentTheme = $derived.by(() =>
-    $GameThemeStore.find((t) => t.game === selectedGame)
-  );
 
   onMount(async () => {
     currentTheme = await getFromStore('game-theme')
