@@ -101,7 +101,7 @@
 </script>
 
 {#if error}
-<div class="absolute top-4 left-4 w-fit max-w-md p-4 bg-red-900/90 text-white rounded-lg shadow-lg z-50 flex items-start gap-2">
+<div class="absolute top-4 left-52 w-fit max-w-md p-4 bg-red-900/90 text-white rounded-lg shadow-lg z-50 flex items-start gap-2">
   <p class="flex-1">{error}</p>
   <button class="cursor-pointer hover:opacity-70" onclick={() => error = ""}>
     <CircleX size="20" />
@@ -125,7 +125,7 @@
   
   <div class="flex flex-row gap-4 mt-20 2xl:mt-24 h-60 2xl:h-72 3xl:h-80">
     <!-- Main Video Section -->
-    <div class="relative flex-1 rounded-xl overflow-hidden w-md 2xl:w-lg shadow-lg">
+    <div class="relative  rounded-xl overflow-hidden w-md 2xl:w-lg shadow-lg">
       {#if owTheme}
       <iframe 
         class="w-full h-full" 
