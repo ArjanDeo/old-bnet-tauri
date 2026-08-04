@@ -1,5 +1,7 @@
 # old-bnet-tauri
+![alt text][logo]
 
+[logo]: https://github.com/ArjanDeo/old-bnet-tauri/blob/main/static/old-bnet-tauri-wowpage.webp "Screenshot of old-bnet-tauri app"
 ![version](https://img.shields.io/badge/version-0.2.3_beta-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey.svg)
 
