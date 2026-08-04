@@ -63,16 +63,7 @@ Getting started
    rustup default stable
 
 ### Run (development)
-- Frontend only (Svelte dev server):
-
-  npm run dev
-  # Open http://localhost:5173 in your browser
-
-- Tauri desktop app (recommended for testing native features):
-
-  npm run tauri dev
-
-The `tauri` script proxies to the Tauri CLI; `npm run tauri dev` starts the full desktop app with the frontend in dev mode.
+  "npm run tauri dev" will run the app in it's intended desktop environment.
 
 ### Build (release)
 1. Build frontend assets:
