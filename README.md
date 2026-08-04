@@ -1,9 +1,11 @@
 # old-bnet-tauri
-![alt text][logo]
 
-[logo]: https://github.com/ArjanDeo/old-bnet-tauri/blob/main/static/old-bnet-tauri-wowpage.webp "Screenshot of old-bnet-tauri app"
 ![version](https://img.shields.io/badge/version-0.2.3_beta-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey.svg)
+![alt text][logo]
+
+[logo]: https://github.com/ArjanDeo/old-bnet-tauri/blob/main/static/old-bnet-tauri-wowpage.webp "Screenshot of old-bnet-tauri App"
+
 
 A desktop companion for Blizzard/Battle.net games built with Tauri (Rust) and SvelteKit (TypeScript). The app locates installed Battle.net games, reads local game metadata (build info and playtime), syncs versions to a local store, and can launch games using Battle.net launch arguments. It also integrates with Battle.net OAuth to fetch user/profile data.
 
