@@ -50,20 +50,25 @@ Getting started
 ### Install
 1. Clone the repo:
 
-   git clone https://github.com/ArjanDeo/old-bnet-tauri.git
+   git clone https://github.com/ArjanDeo/old-bnet-tauri.git<br/>
    cd old-bnet-tauri
+2. Clone Twisting Nether repo:
+   (This is required for Battle.Net OAuth and related functionality, OAuth callback utilizes the WebAPI at this repo)
+   git clone [https://github.com/ArjanDeo/TwistingNether.git](https://github.com/ArjanDeo/TwistingNether.git)<br/>
+   cd TwistingNether
 
-2. Install JavaScript dependencies:
+4. Install JavaScript dependencies:
 
    npm install
 
-3. Ensure Rust toolchain is installed and up-to-date:
+5. Ensure Rust toolchain is installed and up-to-date:
 
    rustup toolchain install stable
    rustup default stable
 
 ### Run (development)
   "npm run tauri dev" will run the app in it's intended desktop environment.
+  If running the TwistingNether API as well, open solution in visual studio and create an appsettings.json in accordance with the [ReadME](https://github.com/ArjanDeo/TwistingNether/blob/master/README.md) and run the solution.
 
 ### Build (release)
 1. Build frontend assets:
